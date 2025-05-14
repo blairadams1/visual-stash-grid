@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -10,6 +9,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
+import BookmarkletInstall from "@/components/BookmarkletInstall";
 
 const Index = () => {
   // State for bookmarks from local storage
@@ -101,6 +101,9 @@ const Index = () => {
               >
                 {showForm ? "Hide Form" : "Add Bookmark"}
               </Button>
+              
+              <BookmarkletInstall />
+              
               <div className="relative w-full md:w-64">
                 <Input
                   type="text"
