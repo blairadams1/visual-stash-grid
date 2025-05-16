@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BookmarkPlus } from 'lucide-react';
-import { Bookmark } from '@/lib/bookmarkUtils';
 import { getCurrentTab, sendMessage } from '@/lib/extensionApi';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -68,6 +67,11 @@ const ExtensionPopup = () => {
         if (!window.location.href.includes('/extension')) {
           setTags('');
         }
+
+        // Reset success state after 2 seconds
+        setTimeout(() => {
+          setIsSuccess(false);
+        }, 2000);
       } else {
         toast({
           title: 'Failed to bookmark page',
@@ -80,6 +84,54 @@ const ExtensionPopup = () => {
       toast({
         title: 'Error bookmarking page',
         description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Quick save functionality similar to what was in BookmarkFloatingButton
+  const handleQuickSave = async () => {
+    setIsLoading(true);
+    setIsSuccess(false);
+    
+    try {
+      const tab = await getCurrentTab();
+      
+      if (tab) {
+        const response = await sendMessage({
+          type: 'ADD_BOOKMARK',
+          bookmark: {
+            url: tab.url,
+            title: tab.title,
+            tags: []
+          }
+        });
+        
+        if (response.success) {
+          setIsSuccess(true);
+          toast({
+            title: 'Bookmark saved!',
+            description: 'The page has been added to your bookmarks.',
+          });
+          
+          // Reset success state after 2 seconds
+          setTimeout(() => {
+            setIsSuccess(false);
+          }, 2000);
+        } else {
+          toast({
+            title: 'Failed to save bookmark',
+            description: response.message,
+            variant: 'destructive',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error adding bookmark:', error);
+      toast({
+        title: 'Error saving bookmark',
         variant: 'destructive',
       });
     } finally {
@@ -133,6 +185,19 @@ const ExtensionPopup = () => {
           className={`w-full ${isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-bookmark-purple hover:bg-bookmark-darkPurple'}`}
         >
           {isLoading ? 'Saving...' : isSuccess ? 'Saved!' : 'Add Bookmark'}
+        </Button>
+
+        {/* Quick Save Button - similar to the one that was in BookmarkFloatingButton */}
+        <Button
+          onClick={handleQuickSave}
+          disabled={isLoading}
+          className={`w-full ${
+            isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-bookmark-purple hover:bg-bookmark-darkPurple'
+          }`}
+          title="Save to Hub"
+        >
+          <BookmarkPlus className="h-5 w-5 mr-1" />
+          {isLoading ? 'Saving...' : isSuccess ? 'Saved!' : 'Save to Hub'}
         </Button>
         
         <div className="mt-2 text-xs text-center text-gray-500">
