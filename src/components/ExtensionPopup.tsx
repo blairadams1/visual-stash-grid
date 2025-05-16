@@ -91,7 +91,7 @@ const ExtensionPopup = () => {
     }
   };
 
-  // Quick save functionality similar to what was in BookmarkFloatingButton
+  // Quick save functionality
   const handleQuickSave = async () => {
     setIsLoading(true);
     setIsSuccess(false);
@@ -187,7 +187,7 @@ const ExtensionPopup = () => {
           {isLoading ? 'Saving...' : isSuccess ? 'Saved!' : 'Add Bookmark'}
         </Button>
 
-        {/* Quick Save Button - similar to the one that was in BookmarkFloatingButton */}
+        {/* Quick Save Button */}
         <Button
           onClick={handleQuickSave}
           disabled={isLoading}

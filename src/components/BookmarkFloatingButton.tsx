@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/button';
 import { getCurrentTab, sendMessage } from '@/lib/extensionApi';
 import { useToast } from '@/components/ui/use-toast';
 
-const BookmarkFloatingButton = () => {
+interface BookmarkFloatingButtonProps {
+  onBookmarkAdded?: () => void;
+}
+
+const BookmarkFloatingButton = ({ onBookmarkAdded }: BookmarkFloatingButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
@@ -33,6 +37,11 @@ const BookmarkFloatingButton = () => {
             title: 'Bookmark saved!',
             description: 'The page has been added to your bookmarks.',
           });
+          
+          // Call the callback function to refresh bookmarks
+          if (onBookmarkAdded) {
+            onBookmarkAdded();
+          }
           
           // Reset success state after 2 seconds
           setTimeout(() => {
