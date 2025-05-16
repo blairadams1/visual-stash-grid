@@ -31,7 +31,7 @@ const BookmarkFloatingButton = () => {
           setIsSuccess(true);
           toast({
             title: 'Bookmark saved!',
-            description: 'Refresh the page to see your new bookmark.',
+            description: 'The page has been added to your bookmarks.',
           });
           
           // Reset success state after 2 seconds
@@ -60,16 +60,15 @@ const BookmarkFloatingButton = () => {
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <Button
-        size="lg"
         onClick={handleQuickSave}
         disabled={isLoading}
-        className={`rounded-full p-3 shadow-lg ${
+        className={`${
           isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-bookmark-purple hover:bg-bookmark-darkPurple'
         }`}
         title="Save to Hub"
       >
-        <BookmarkPlus className="h-6 w-6" />
-        <span className="sr-only">Save to Hub</span>
+        <BookmarkPlus className="h-5 w-5 mr-1" />
+        {isLoading ? 'Saving...' : isSuccess ? 'Saved!' : 'Save to Hub'}
       </Button>
     </div>
   );
