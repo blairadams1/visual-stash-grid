@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import BookmarkletInstall from "@/components/BookmarkletInstall";
+import BookmarkFloatingButton from "@/components/BookmarkFloatingButton";
 
 const Index = () => {
   // State for bookmarks from local storage
@@ -21,6 +23,14 @@ const Index = () => {
   const [showForm, setShowForm] = useState(false);
   
   const { toast } = useToast();
+
+  // Force refresh bookmarks from local storage
+  useEffect(() => {
+    const storedBookmarks = localStorage.getItem("bookmarks");
+    if (storedBookmarks) {
+      setBookmarks(JSON.parse(storedBookmarks));
+    }
+  }, []);
 
   // Calculate available tags from all bookmarks
   const availableTags = Array.from(
@@ -79,6 +89,17 @@ const Index = () => {
   // Sort bookmarks by order
   const sortedBookmarks = [...filteredBookmarks].sort((a, b) => a.order - b.order);
 
+  // Handle manual refresh
+  const handleRefresh = () => {
+    const storedBookmarks = localStorage.getItem("bookmarks");
+    if (storedBookmarks) {
+      setBookmarks(JSON.parse(storedBookmarks));
+      toast({
+        title: "Bookmarks refreshed",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
@@ -100,6 +121,14 @@ const Index = () => {
                 )}
               >
                 {showForm ? "Hide Form" : "Add Bookmark"}
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                title="Refresh Bookmarks"
+              >
+                Refresh
               </Button>
               
               <BookmarkletInstall />
@@ -182,6 +211,9 @@ const Index = () => {
           </div>
         </div>
       </main>
+      
+      {/* Floating Bookmark Button */}
+      <BookmarkFloatingButton />
     </div>
   );
 };

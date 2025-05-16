@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { BookmarkPlus } from 'lucide-react';
 import { Bookmark } from '@/lib/bookmarkUtils';
 import { getCurrentTab, sendMessage } from '@/lib/extensionApi';
 import { useToast } from '@/components/ui/use-toast';
@@ -12,6 +12,7 @@ const ExtensionPopup = () => {
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
 
   // Simulate getting current page when popup opens
@@ -37,6 +38,7 @@ const ExtensionPopup = () => {
     }
 
     setIsLoading(true);
+    setIsSuccess(false);
 
     try {
       // Process tags
@@ -56,6 +58,7 @@ const ExtensionPopup = () => {
       });
 
       if (response.success) {
+        setIsSuccess(true);
         toast({
           title: 'Page bookmarked!',
           description: 'The page has been added to your bookmarks.',
@@ -63,8 +66,6 @@ const ExtensionPopup = () => {
         
         // Clear the form if not using current page
         if (!window.location.href.includes('/extension')) {
-          setUrl('');
-          setTitle('');
           setTags('');
         }
       } else {
@@ -90,9 +91,7 @@ const ExtensionPopup = () => {
     <div className="p-4 max-w-md mx-auto bg-white rounded-lg shadow-lg">
       <div className="flex items-center mb-4">
         <div className="bg-bookmark-purple p-2 rounded-md mr-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
-          </svg>
+          <BookmarkPlus className="h-5 w-5 text-white" />
         </div>
         <h2 className="text-lg font-bold">Visual Bookmarker</h2>
       </div>
@@ -131,13 +130,25 @@ const ExtensionPopup = () => {
         <Button 
           onClick={handleAddBookmark}
           disabled={isLoading}
-          className="w-full bg-bookmark-purple hover:bg-bookmark-darkPurple"
+          className={`w-full ${isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-bookmark-purple hover:bg-bookmark-darkPurple'}`}
         >
-          {isLoading ? 'Saving...' : 'Add Bookmark'}
+          {isLoading ? 'Saving...' : isSuccess ? 'Saved!' : 'Add Bookmark'}
         </Button>
         
         <div className="mt-2 text-xs text-center text-gray-500">
-          <a href="/" target="_blank" className="underline hover:text-bookmark-purple">
+          <a 
+            href="/" 
+            target="_blank" 
+            className="underline hover:text-bookmark-purple"
+            onClick={() => {
+              if (window !== window.parent) {
+                // If in an iframe, navigate the parent window
+                window.parent.location.href = '/';
+                return false;
+              }
+              return true;
+            }}
+          >
             Open Bookmarks Dashboard
           </a>
         </div>

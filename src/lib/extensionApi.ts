@@ -1,11 +1,10 @@
-
 /**
  * This file simulates browser extension APIs that would be available in a real extension
  */
 
 import { Bookmark, createBookmark } from './bookmarkUtils';
 
-// Storage simulation for when running as a webpage instead of extension
+// Use the same storage key as the main application
 const LOCAL_STORAGE_KEY = 'bookmarks';
 
 export interface ExtensionMessage {
@@ -35,16 +34,43 @@ export const sendMessage = async (message: ExtensionMessage): Promise<ExtensionR
         localStorage.getItem(LOCAL_STORAGE_KEY) || '[]'
       );
       
-      // Create a new bookmark
-      const newBookmark = createBookmark(
-        message.bookmark.url,
-        message.bookmark.title,
-        message.bookmark.tags,
-        existingBookmarks
+      // Check if bookmark with same URL already exists
+      const existingBookmarkIndex = existingBookmarks.findIndex(
+        b => b.url === message.bookmark?.url
       );
       
-      // Add it to storage
-      const updatedBookmarks = [...existingBookmarks, newBookmark];
+      let updatedBookmarks: Bookmark[];
+      
+      if (existingBookmarkIndex >= 0) {
+        // Update existing bookmark
+        const updatedBookmark = createBookmark(
+          message.bookmark.url,
+          message.bookmark.title,
+          message.bookmark.tags,
+          existingBookmarks
+        );
+        
+        // Keep the same ID and order but update other properties
+        updatedBookmark.id = existingBookmarks[existingBookmarkIndex].id;
+        updatedBookmark.order = existingBookmarks[existingBookmarkIndex].order;
+        
+        // Replace the existing bookmark
+        existingBookmarks[existingBookmarkIndex] = updatedBookmark;
+        updatedBookmarks = [...existingBookmarks];
+      } else {
+        // Create a new bookmark
+        const newBookmark = createBookmark(
+          message.bookmark.url,
+          message.bookmark.title,
+          message.bookmark.tags,
+          existingBookmarks
+        );
+        
+        // Add it to storage
+        updatedBookmarks = [...existingBookmarks, newBookmark];
+      }
+      
+      // Save to localStorage
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedBookmarks));
       
       return { 
@@ -93,4 +119,3 @@ export const getCurrentTab = async (): Promise<{ url: string; title: string } | 
     title: document.title
   };
 };
-
