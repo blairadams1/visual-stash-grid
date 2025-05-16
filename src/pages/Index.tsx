@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -11,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import BookmarkletInstall from "@/components/BookmarkletInstall";
-import BookmarkFloatingButton from "@/components/BookmarkFloatingButton";
 
 const Index = () => {
   // State for bookmarks from local storage
@@ -212,8 +210,6 @@ const Index = () => {
         </div>
       </main>
       
-      {/* Floating Bookmark Button */}
-      <BookmarkFloatingButton />
     </div>
   );
 };
