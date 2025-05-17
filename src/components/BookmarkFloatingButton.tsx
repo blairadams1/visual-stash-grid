@@ -7,7 +7,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { 
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { generateAutoTags } from '@/lib/bookmarkUtils';
@@ -82,37 +81,35 @@ const BookmarkFloatingButton = ({ onBookmarkAdded }: BookmarkFloatingButtonProps
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={handleQuickSave}
-              disabled={isLoading}
-              size="lg"
-              className={`shadow-lg ${
-                isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-bookmark-blue hover:bg-bookmark-darkBlue'
-              }`}
-            >
-              {isLoading ? (
-                'Saving...'
-              ) : isSuccess ? (
-                <span className="flex items-center">
-                  <Check className="h-5 w-5 mr-1" />
-                  Saved!
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <BookmarkPlus className="h-5 w-5 mr-1" />
-                  Save to Hub
-                </span>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Save the current page to your TagMarked</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={handleQuickSave}
+            disabled={isLoading}
+            size="lg"
+            className={`shadow-lg ${
+              isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-bookmark-blue hover:bg-bookmark-darkBlue'
+            }`}
+          >
+            {isLoading ? (
+              'Saving...'
+            ) : isSuccess ? (
+              <span className="flex items-center">
+                <Check className="h-5 w-5 mr-1" />
+                Saved!
+              </span>
+            ) : (
+              <span className="flex items-center">
+                <BookmarkPlus className="h-5 w-5 mr-1" />
+                Save to Hub
+              </span>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Save the current page to your TagMarked</p>
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 };
