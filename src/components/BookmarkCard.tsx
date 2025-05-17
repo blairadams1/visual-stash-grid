@@ -54,7 +54,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
                   key={tag}
                   variant="outline"
                   size="sm"
-                  className="h-6 px-2 text-xs bg-black/20 hover:bg-bookmark-purple text-white border-white/20 hover:text-white hover:border-transparent"
+                  className="h-6 px-2 text-xs bg-black/20 hover:bg-bookmark-blue text-white border-white/20 hover:text-white hover:border-transparent"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();

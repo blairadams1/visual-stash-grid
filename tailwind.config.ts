@@ -64,10 +64,10 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				bookmark: {
-					purple: '#8B5CF6',
+					blue: '#3B82F6', // Changed from purple to blue
 					lightGray: '#F3F4F6',
-					darkPurple: '#6E59A5',
-					softPurple: '#E5DEFF',
+					darkBlue: '#2563EB', // Changed from darkPurple to darkBlue
+					softBlue: '#DBEAFE', // Changed from softPurple to softBlue
 				}
 			},
 			borderRadius: {

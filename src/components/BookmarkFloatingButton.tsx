@@ -90,7 +90,7 @@ const BookmarkFloatingButton = ({ onBookmarkAdded }: BookmarkFloatingButtonProps
               disabled={isLoading}
               size="lg"
               className={`shadow-lg ${
-                isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-bookmark-purple hover:bg-bookmark-darkPurple'
+                isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-bookmark-blue hover:bg-bookmark-darkBlue'
               }`}
             >
               {isLoading ? (
@@ -109,7 +109,7 @@ const BookmarkFloatingButton = ({ onBookmarkAdded }: BookmarkFloatingButtonProps
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Save the current page to your Visual Bookmarker</p>
+            <p>Save the current page to your TagMarked</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

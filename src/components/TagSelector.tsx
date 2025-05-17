@@ -59,7 +59,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
           {selectedTags.map((tag) => (
             <Badge
               key={tag}
-              className="bg-bookmark-purple text-white px-3 cursor-pointer hover:bg-bookmark-darkPurple"
+              className="bg-bookmark-blue text-white px-3 cursor-pointer hover:bg-bookmark-darkBlue"
               onClick={() => onTagDeselect(tag)}
             >
               {tag} ×
@@ -77,7 +77,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
               key={tag}
               variant="outline"
               className={cn(
-                "cursor-pointer border-bookmark-purple text-bookmark-darkPurple hover:bg-bookmark-softPurple"
+                "cursor-pointer border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-softBlue"
               )}
               onClick={() => onTagSelect(tag)}
             >

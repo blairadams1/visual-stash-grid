@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -11,6 +12,12 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import BookmarkletInstall from "@/components/BookmarkletInstall";
 import BookmarkFloatingButton from "@/components/BookmarkFloatingButton";
+import { Filter, Plus, RefreshCw } from "lucide-react";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const Index = () => {
   // State for bookmarks from local storage
@@ -20,6 +27,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   
   const { toast } = useToast();
 
@@ -105,7 +113,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-bookmark-darkPurple">Visual Bookmarker</h1>
+              <h1 className="text-2xl font-bold text-bookmark-darkBlue">TagMarked</h1>
               <p className="text-gray-500">Save and organize your bookmarks visually</p>
             </div>
             
@@ -116,10 +124,10 @@ const Index = () => {
                   "transition-colors",
                   showForm 
                     ? "bg-gray-200 text-gray-800 hover:bg-gray-300" 
-                    : "bg-bookmark-purple hover:bg-bookmark-darkPurple"
+                    : "bg-bookmark-blue hover:bg-bookmark-darkBlue"
                 )}
               >
-                {showForm ? "Hide Form" : "Add Bookmark"}
+                <Plus className="h-5 w-5" />
               </Button>
               
               <Button
@@ -127,8 +135,35 @@ const Index = () => {
                 onClick={refreshBookmarks}
                 title="Refresh Bookmarks"
               >
-                Refresh
+                <RefreshCw className="h-5 w-5" />
               </Button>
+              
+              <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant={selectedTags.length > 0 ? "default" : "outline"}
+                    className={selectedTags.length > 0 ? "bg-bookmark-blue" : ""}
+                  >
+                    <Filter className="h-5 w-5" />
+                    {selectedTags.length > 0 && (
+                      <span className="ml-1 text-xs bg-white text-bookmark-darkBlue rounded-full w-5 h-5 flex items-center justify-center">
+                        {selectedTags.length}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <div className="p-4">
+                    <TagSelector
+                      availableTags={availableTags}
+                      selectedTags={selectedTags}
+                      onTagSelect={handleTagSelect}
+                      onTagDeselect={handleTagDeselect}
+                      onClearAllTags={handleClearAllTags}
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
               
               <BookmarkletInstall />
               
@@ -166,48 +201,33 @@ const Index = () => {
           </>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Sidebar with Tag Filter */}
-          <aside className="md:col-span-1">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <TagSelector
-                availableTags={availableTags}
-                selectedTags={selectedTags}
-                onTagSelect={handleTagSelect}
-                onTagDeselect={handleTagDeselect}
-                onClearAllTags={handleClearAllTags}
-              />
+        {/* Bookmark Grid */}
+        <div className="w-full">
+          {sortedBookmarks.length > 0 ? (
+            <BookmarkGrid
+              bookmarks={sortedBookmarks}
+              onBookmarksReordered={handleBookmarksReordered}
+              onTagClick={handleTagSelect}
+              onDeleteBookmark={handleDeleteBookmark}
+            />
+          ) : (
+            <div className="bg-white p-8 rounded-lg shadow text-center">
+              <h2 className="text-xl font-medium mb-2">No bookmarks found</h2>
+              <p className="text-gray-500 mb-4">
+                {bookmarks.length === 0
+                  ? "Add your first bookmark to get started."
+                  : "Try adjusting your search or filter criteria."}
+              </p>
+              {bookmarks.length === 0 && (
+                <Button 
+                  onClick={() => setShowForm(true)}
+                  className="bg-bookmark-blue hover:bg-bookmark-darkBlue"
+                >
+                  Add Bookmark
+                </Button>
+              )}
             </div>
-          </aside>
-
-          {/* Main Content with Bookmark Grid */}
-          <div className="md:col-span-3">
-            {sortedBookmarks.length > 0 ? (
-              <BookmarkGrid
-                bookmarks={sortedBookmarks}
-                onBookmarksReordered={handleBookmarksReordered}
-                onTagClick={handleTagSelect}
-                onDeleteBookmark={handleDeleteBookmark}
-              />
-            ) : (
-              <div className="bg-white p-8 rounded-lg shadow text-center">
-                <h2 className="text-xl font-medium mb-2">No bookmarks found</h2>
-                <p className="text-gray-500 mb-4">
-                  {bookmarks.length === 0
-                    ? "Add your first bookmark to get started."
-                    : "Try adjusting your search or filter criteria."}
-                </p>
-                {bookmarks.length === 0 && (
-                  <Button 
-                    onClick={() => setShowForm(true)}
-                    className="bg-bookmark-purple hover:bg-bookmark-darkPurple"
-                  >
-                    Add Bookmark
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </main>
       
