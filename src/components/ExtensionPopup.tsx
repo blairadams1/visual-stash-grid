@@ -91,54 +91,6 @@ const ExtensionPopup = () => {
     }
   };
 
-  // Quick save functionality
-  const handleQuickSave = async () => {
-    setIsLoading(true);
-    setIsSuccess(false);
-    
-    try {
-      const tab = await getCurrentTab();
-      
-      if (tab) {
-        const response = await sendMessage({
-          type: 'ADD_BOOKMARK',
-          bookmark: {
-            url: tab.url,
-            title: tab.title,
-            tags: []
-          }
-        });
-        
-        if (response.success) {
-          setIsSuccess(true);
-          toast({
-            title: 'Bookmark saved!',
-            description: 'The page has been added to your bookmarks.',
-          });
-          
-          // Reset success state after 2 seconds
-          setTimeout(() => {
-            setIsSuccess(false);
-          }, 2000);
-        } else {
-          toast({
-            title: 'Failed to save bookmark',
-            description: response.message,
-            variant: 'destructive',
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error adding bookmark:', error);
-      toast({
-        title: 'Error saving bookmark',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="p-4 max-w-md mx-auto bg-white rounded-lg shadow-lg">
       <div className="flex items-center mb-4">
@@ -185,19 +137,6 @@ const ExtensionPopup = () => {
           className={`w-full ${isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-bookmark-purple hover:bg-bookmark-darkPurple'}`}
         >
           {isLoading ? 'Saving...' : isSuccess ? 'Saved!' : 'Add Bookmark'}
-        </Button>
-
-        {/* Quick Save Button */}
-        <Button
-          onClick={handleQuickSave}
-          disabled={isLoading}
-          className={`w-full ${
-            isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-bookmark-purple hover:bg-bookmark-darkPurple'
-          }`}
-          title="Save to Hub"
-        >
-          <BookmarkPlus className="h-5 w-5 mr-1" />
-          {isLoading ? 'Saving...' : isSuccess ? 'Saved!' : 'Save to Hub'}
         </Button>
         
         <div className="mt-2 text-xs text-center text-gray-500">
