@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import BookmarkForm from "@/components/BookmarkForm";
 import BookmarkGrid from "@/components/BookmarkGrid";
-import TagSelector from "@/components/TagSelector";
+import EnhancedTagSelector from "@/components/EnhancedTagSelector";
 import { Bookmark } from "@/lib/bookmarkUtils";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Input } from "@/components/ui/input";
@@ -12,12 +12,22 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import BookmarkletInstall from "@/components/BookmarkletInstall";
 import BookmarkFloatingButton from "@/components/BookmarkFloatingButton";
-import { Filter, Plus, RefreshCw } from "lucide-react";
+import { Filter, Plus, RefreshCw, FolderOpen } from "lucide-react";
 import { 
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import CollectionsPanel from "@/components/CollectionsPanel";
+import { useCollections } from "@/hooks/useCollections";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const Index = () => {
   // State for bookmarks from local storage
@@ -26,9 +36,11 @@ const Index = () => {
   // State for search and filtering
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
+  const { collections } = useCollections();
   const { toast } = useToast();
 
   // Force refresh bookmarks from local storage
@@ -88,6 +100,11 @@ const Index = () => {
     setSelectedTags([]);
   };
 
+  // Handle collection selection
+  const handleSelectCollection = (collectionId: string | null) => {
+    setSelectedCollectionId(collectionId);
+  };
+
   // Filter bookmarks based on search query and selected tags
   const filteredBookmarks = bookmarks.filter((bookmark) => {
     // Filter by search query
@@ -107,14 +124,50 @@ const Index = () => {
   // Sort bookmarks by order
   const sortedBookmarks = [...filteredBookmarks].sort((a, b) => a.order - b.order);
 
+  // Get selected collection name if any
+  const selectedCollection = collections.find(c => c.id === selectedCollectionId);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
         <div className="container max-w-full px-4 py-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-bookmark-darkBlue">TagMarked</h1>
-              <p className="text-gray-500">Save and organize your bookmarks visually</p>
+            <div className="flex items-center">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="mr-3 md:mr-4"
+                    aria-label="Open collections"
+                  >
+                    <FolderOpen className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                  <SheetHeader className="mb-4">
+                    <SheetTitle>Collections</SheetTitle>
+                    <SheetDescription>
+                      Organize your bookmarks into collections
+                    </SheetDescription>
+                  </SheetHeader>
+                  <CollectionsPanel 
+                    selectedCollectionId={selectedCollectionId}
+                    onSelectCollection={handleSelectCollection}
+                  />
+                </SheetContent>
+              </Sheet>
+
+              <div>
+                <h1 className="text-2xl font-bold text-bookmark-darkBlue">
+                  TagMarked
+                  {selectedCollection && (
+                    <span className="ml-2 text-gray-500">
+                      / {selectedCollection.name}
+                    </span>
+                  )}
+                </h1>
+                <p className="text-gray-500">Save and organize your bookmarks visually</p>
+              </div>
             </div>
             
             <div className="flex items-center gap-3">
@@ -154,8 +207,7 @@ const Index = () => {
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-0" align="end">
                   <div className="p-4">
-                    <TagSelector
-                      availableTags={availableTags}
+                    <EnhancedTagSelector
                       selectedTags={selectedTags}
                       onTagSelect={handleTagSelect}
                       onTagDeselect={handleTagDeselect}
@@ -197,6 +249,7 @@ const Index = () => {
               <BookmarkForm
                 onAddBookmark={handleAddBookmark}
                 existingBookmarks={bookmarks}
+                selectedCollectionId={selectedCollectionId}
               />
               <Separator className="my-6" />
             </div>
@@ -211,6 +264,8 @@ const Index = () => {
               onBookmarksReordered={handleBookmarksReordered}
               onTagClick={handleTagSelect}
               onDeleteBookmark={handleDeleteBookmark}
+              selectedCollectionId={selectedCollectionId}
+              collections={collections}
             />
           ) : (
             <div className="bg-white p-8 rounded-lg shadow text-center mx-2">

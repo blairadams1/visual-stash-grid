@@ -1,5 +1,5 @@
 
-import { Bookmark } from "@/lib/bookmarkUtils";
+import { Bookmark, Collection } from "@/lib/bookmarkUtils";
 import BookmarkCard from "./BookmarkCard";
 import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -9,6 +9,8 @@ interface BookmarkGridProps {
   onBookmarksReordered: (bookmarks: Bookmark[]) => void;
   onTagClick: (tag: string) => void;
   onDeleteBookmark: (id: string) => void;
+  selectedCollectionId: string | null;
+  collections: Collection[];
 }
 
 const BookmarkGrid: React.FC<BookmarkGridProps> = ({
@@ -16,6 +18,8 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   onBookmarksReordered,
   onTagClick,
   onDeleteBookmark,
+  selectedCollectionId,
+  collections,
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [targetIndex, setTargetIndex] = useState<number | null>(null);
@@ -145,9 +149,41 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     setTouchEndIndex(null);
   };
 
+  // Filter and group bookmarks by collection
+  const getFilteredBookmarks = () => {
+    if (!selectedCollectionId) {
+      return bookmarks; // Return all bookmarks when no collection is selected
+    }
+    
+    // Get the selected collection and its subcollections
+    const subCollectionIds = getSubCollectionIds(selectedCollectionId);
+    
+    // Filter bookmarks by the selected collection and its subcollections
+    return bookmarks.filter(
+      bookmark => bookmark.collectionId === selectedCollectionId || 
+                (bookmark.collectionId && subCollectionIds.includes(bookmark.collectionId))
+    );
+  };
+  
+  // Function to get all subcollection IDs recursively
+  const getSubCollectionIds = (parentId: string): string[] => {
+    const result: string[] = [];
+    
+    const childCollections = collections.filter(c => c.parentId === parentId);
+    childCollections.forEach(collection => {
+      result.push(collection.id);
+      result.push(...getSubCollectionIds(collection.id));
+    });
+    
+    return result;
+  };
+
+  // Get filtered bookmarks based on selected collection
+  const filteredBookmarks = getFilteredBookmarks();
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 px-0 mx-0">
-      {bookmarks.map((bookmark, index) => (
+      {filteredBookmarks.map((bookmark, index) => (
         <div
           key={bookmark.id}
           draggable={!isMobile}

@@ -1,21 +1,42 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bookmark, createBookmark } from "@/lib/bookmarkUtils";
+import { Bookmark, createBookmark, Collection } from "@/lib/bookmarkUtils";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useCollections } from "@/hooks/useCollections";
 
 interface BookmarkFormProps {
   onAddBookmark: (bookmark: Bookmark) => void;
   existingBookmarks: Bookmark[];
+  selectedCollectionId?: string | null;
 }
 
-const BookmarkForm: React.FC<BookmarkFormProps> = ({ onAddBookmark, existingBookmarks }) => {
+const BookmarkForm: React.FC<BookmarkFormProps> = ({ 
+  onAddBookmark, 
+  existingBookmarks, 
+  selectedCollectionId = null 
+}) => {
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [customTags, setCustomTags] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [collectionId, setCollectionId] = useState<string | null>(null);
+  
+  const { collections } = useCollections();
   const { toast } = useToast();
+
+  // Set the selected collection when it changes externally
+  useEffect(() => {
+    setCollectionId(selectedCollectionId);
+  }, [selectedCollectionId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +78,8 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({ onAddBookmark, existingBook
         processedUrl,
         finalTitle,
         tagArray,
-        existingBookmarks
+        existingBookmarks,
+        collectionId || undefined
       );
 
       // Add the bookmark
@@ -83,9 +105,29 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({ onAddBookmark, existingBook
     }
   };
 
+  // Function to get all collections as a flat list for the dropdown
+  const getFlatCollections = (collections: Collection[]): { id: string, name: string, level: number }[] => {
+    const result: { id: string, name: string, level: number }[] = [];
+    
+    const addCollection = (collection: Collection, level: number) => {
+      result.push({ id: collection.id, name: collection.name, level });
+      
+      const children = collections.filter(c => c.parentId === collection.id);
+      children.forEach(child => addCollection(child, level + 1));
+    };
+    
+    // Get root collections (those with no parent)
+    const rootCollections = collections.filter(c => !c.parentId);
+    rootCollections.forEach(root => addCollection(root, 0));
+    
+    return result;
+  };
+
+  const flatCollections = getFlatCollections(collections);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mb-6">
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <div className="md:col-span-2">
           <Input
             type="text"
@@ -115,6 +157,24 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({ onAddBookmark, existingBook
             disabled={isLoading}
             className="w-full"
           />
+        </div>
+        <div>
+          <Select
+            value={collectionId || ''}
+            onValueChange={(value) => setCollectionId(value === 'none' ? null : value)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select Collection" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No Collection</SelectItem>
+              {flatCollections.map((collection) => (
+                <SelectItem key={collection.id} value={collection.id}>
+                  {Array(collection.level).fill('—').join('')} {collection.level > 0 && '› '}{collection.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div className="flex justify-end">
