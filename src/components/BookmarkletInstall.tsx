@@ -9,14 +9,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 const BookmarkletInstall = () => {
   const [showDialog, setShowDialog] = useState(false);
+  const { toast } = useToast();
   
-  // Create bookmarklet code (this would be much more complex in a real extension)
+  // Create bookmarklet code with improved behavior
   const bookmarkletCode = `javascript:(function(){
-    window.open('${window.location.origin}/extension?url='+encodeURIComponent(window.location.href)+'&title='+encodeURIComponent(document.title),'_blank','width=400,height=500');
+    const popup = window.open('${window.location.origin}/extension?url='+encodeURIComponent(window.location.href)+'&title='+encodeURIComponent(document.title),'VisualBookmarker','width=400,height=500,resizable=yes');
+    if(!popup) alert('Please allow popups for Visual Bookmarker to work properly.');
   })();`;
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(bookmarkletCode);
+    toast({
+      title: "Copied to clipboard",
+      description: "Bookmarklet code copied successfully",
+    });
+  };
 
   return (
     <>
@@ -66,10 +77,7 @@ const BookmarkletInstall = () => {
               />
               <Button
                 className="shrink-0"
-                onClick={() => {
-                  navigator.clipboard.writeText(bookmarkletCode);
-                  alert("Copied bookmarklet code!");
-                }}
+                onClick={handleCopyCode}
               >
                 Copy
               </Button>

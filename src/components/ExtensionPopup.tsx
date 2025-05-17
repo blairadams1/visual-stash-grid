@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { BookmarkPlus } from 'lucide-react';
+import { BookmarkPlus, Check } from 'lucide-react';
 import { getCurrentTab, sendMessage } from '@/lib/extensionApi';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -14,9 +14,21 @@ const ExtensionPopup = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
 
-  // Simulate getting current page when popup opens
+  // Get URL and title from query parameters or current tab
   useEffect(() => {
     const loadCurrentPage = async () => {
+      // Check for URL parameters first (used when opened via bookmarklet)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlFromParams = urlParams.get('url');
+      const titleFromParams = urlParams.get('title');
+      
+      if (urlFromParams) {
+        setUrl(urlFromParams);
+        if (titleFromParams) setTitle(titleFromParams);
+        return;
+      }
+      
+      // Fall back to getting current tab info
       const tab = await getCurrentTab();
       if (tab) {
         setUrl(tab.url);
@@ -136,7 +148,17 @@ const ExtensionPopup = () => {
           disabled={isLoading}
           className={`w-full ${isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-bookmark-purple hover:bg-bookmark-darkPurple'}`}
         >
-          {isLoading ? 'Saving...' : isSuccess ? 'Saved!' : 'Add Bookmark'}
+          {isLoading ? 'Saving...' : isSuccess ? (
+            <span className="flex items-center">
+              <Check className="h-5 w-5 mr-1" />
+              Saved!
+            </span>
+          ) : (
+            <span className="flex items-center">
+              <BookmarkPlus className="h-5 w-5 mr-1" />
+              Add Bookmark
+            </span>
+          )}
         </Button>
         
         <div className="mt-2 text-xs text-center text-gray-500">

@@ -1,3 +1,4 @@
+
 /**
  * This file simulates browser extension APIs that would be available in a real extension
  */
@@ -53,10 +54,18 @@ export const sendMessage = async (message: ExtensionMessage): Promise<ExtensionR
         // Keep the same ID and order but update other properties
         updatedBookmark.id = existingBookmarks[existingBookmarkIndex].id;
         updatedBookmark.order = existingBookmarks[existingBookmarkIndex].order;
+        updatedBookmark.createdAt = existingBookmarks[existingBookmarkIndex].createdAt;
         
         // Replace the existing bookmark
         existingBookmarks[existingBookmarkIndex] = updatedBookmark;
         updatedBookmarks = [...existingBookmarks];
+        
+        // Return success with "updated" message
+        return { 
+          success: true, 
+          message: 'Bookmark updated successfully',
+          bookmarks: updatedBookmarks
+        };
       } else {
         // Create a new bookmark
         const newBookmark = createBookmark(
@@ -68,16 +77,17 @@ export const sendMessage = async (message: ExtensionMessage): Promise<ExtensionR
         
         // Add it to storage
         updatedBookmarks = [...existingBookmarks, newBookmark];
+        
+        // Save to localStorage
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedBookmarks));
+        
+        // Return success with "added" message
+        return { 
+          success: true, 
+          message: 'Bookmark added successfully',
+          bookmarks: updatedBookmarks
+        };
       }
-      
-      // Save to localStorage
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedBookmarks));
-      
-      return { 
-        success: true, 
-        message: 'Bookmark added successfully',
-        bookmarks: updatedBookmarks
-      };
     } catch (error) {
       console.error('Error adding bookmark:', error);
       return { 
@@ -112,8 +122,19 @@ export const sendMessage = async (message: ExtensionMessage): Promise<ExtensionR
  * Simulates getting the current tab information in an extension
  */
 export const getCurrentTab = async (): Promise<{ url: string; title: string } | null> => {
-  // In a real extension, this would use browser APIs to get the current tab
-  // For demo purposes, we'll just return the current page
+  // Check URL parameters (used for bookmarklet)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlFromParams = urlParams.get('url');
+  const titleFromParams = urlParams.get('title');
+  
+  if (urlFromParams) {
+    return {
+      url: urlFromParams,
+      title: titleFromParams || 'Bookmarked Page'
+    };
+  }
+  
+  // Fall back to current page info
   return {
     url: window.location.href,
     title: document.title
