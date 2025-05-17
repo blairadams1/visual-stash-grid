@@ -17,53 +17,87 @@ const graphicsTags = ['graphics', 'illustration', 'animation', 'motion', 'photos
 const threeDTags = ['3d', 'modeling', 'rendering', 'blender', 'cinema4d', 'texture'];
 const aiTags = ['ai', 'machine learning', 'generative', 'neural network', 'stable diffusion', 'midjourney'];
 const devTags = ['development', 'code', 'programming', 'javascript', 'react', 'github'];
+const contentTags = ['article', 'blog', 'reference', 'tutorial', 'documentation', 'guide'];
+const socialTags = ['social', 'community', 'discussion', 'forum', 'networking', 'platform'];
+const businessTags = ['business', 'marketing', 'startup', 'productivity', 'analytics', 'strategy'];
+
+// All tag categories combined
+const allTagCategories = [
+  { category: 'Design', tags: designTags },
+  { category: 'Graphics', tags: graphicsTags },
+  { category: '3D', tags: threeDTags },
+  { category: 'AI', tags: aiTags },
+  { category: 'Development', tags: devTags },
+  { category: 'Content', tags: contentTags },
+  { category: 'Social', tags: socialTags },
+  { category: 'Business', tags: businessTags }
+];
+
+// Function to calculate relevance score for a tag based on URL and title
+const calculateTagRelevance = (tag: string, url: string, title: string): number => {
+  const combinedText = (url + ' ' + title).toLowerCase();
+  let score = 0;
+  
+  // Direct match in URL or title
+  if (combinedText.includes(tag.toLowerCase())) {
+    score += 10;
+    
+    // Boost score for exact word matches (not just substring)
+    const words = combinedText.split(/[\s\-\_\.\,\;\:\/\?\=\&]+/);
+    if (words.includes(tag.toLowerCase())) {
+      score += 5;
+    }
+  }
+  
+  // Match domain-specific patterns
+  if (url.includes('github.com') && tag === 'development') score += 8;
+  if (url.includes('dribbble.com') && tag === 'design') score += 8;
+  if (url.includes('behance.net') && tag === 'design') score += 8;
+  if (url.includes('figma.com') && tag === 'ui/ux') score += 8;
+  if (url.includes('codepen.io') && tag === 'development') score += 8;
+  if (url.includes('shadcn') && tag === 'ui/ux') score += 8;
+  if (url.includes('medium.com') && tag === 'article') score += 7;
+  if (url.includes('youtube.com') && tag === 'tutorial') score += 6;
+  if (url.includes('linkedin.com') && tag === 'social') score += 7;
+  
+  return score;
+};
 
 // Function to generate automatic tags based on URL and title
-export const generateAutoTags = (url: string, title: string): string[] => {
+export const generateAutoTags = (url: string, title: string, maxTags = 3): string[] => {
   const combinedText = (url + ' ' + title).toLowerCase();
-  const tags: string[] = [];
-
-  // Check against each category
-  designTags.forEach(tag => {
-    if (combinedText.includes(tag.toLowerCase())) {
-      tags.push(tag);
-    }
-  });
-
-  graphicsTags.forEach(tag => {
-    if (combinedText.includes(tag.toLowerCase())) {
-      tags.push(tag);
-    }
-  });
-
-  threeDTags.forEach(tag => {
-    if (combinedText.includes(tag.toLowerCase())) {
-      tags.push(tag);
-    }
-  });
-
-  aiTags.forEach(tag => {
-    if (combinedText.includes(tag.toLowerCase())) {
-      tags.push(tag);
-    }
-  });
-
-  devTags.forEach(tag => {
-    if (combinedText.includes(tag.toLowerCase())) {
-      tags.push(tag);
-    }
-  });
-
-  // Check for common domains
-  if (url.includes('behance.net')) tags.push('design');
-  if (url.includes('dribbble.com')) tags.push('design');
-  if (url.includes('github.com')) tags.push('development');
-  if (url.includes('figma.com')) tags.push('ui/ux');
-  if (url.includes('codepen.io')) tags.push('development');
-  if (url.includes('shadcn')) tags.push('ui/ux');
+  const tagScores: { tag: string, score: number }[] = [];
   
-  // Remove duplicates
-  return Array.from(new Set(tags));
+  // Calculate scores for all possible tags
+  allTagCategories.forEach(category => {
+    category.tags.forEach(tag => {
+      const score = calculateTagRelevance(tag, url, title);
+      if (score > 0) {
+        tagScores.push({ tag, score });
+      }
+    });
+  });
+  
+  // Special case: Add domain-based tags if no tags were found
+  if (tagScores.length === 0) {
+    if (url.includes('github.com')) tagScores.push({ tag: 'development', score: 5 });
+    if (url.includes('dribbble.com')) tagScores.push({ tag: 'design', score: 5 });
+    if (url.includes('behance.net')) tagScores.push({ tag: 'design', score: 5 });
+    if (url.includes('figma.com')) tagScores.push({ tag: 'ui/ux', score: 5 });
+    if (url.includes('codepen.io')) tagScores.push({ tag: 'development', score: 5 });
+    if (url.includes('shadcn')) tagScores.push({ tag: 'ui/ux', score: 5 });
+    if (url.includes('medium.com')) tagScores.push({ tag: 'article', score: 5 });
+    if (url.includes('youtube.com')) tagScores.push({ tag: 'tutorial', score: 5 });
+    if (url.includes('linkedin.com')) tagScores.push({ tag: 'social', score: 5 });
+  }
+  
+  // Sort tags by score and take the top N
+  const sortedTags = tagScores
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.tag);
+  
+  // Remove duplicates and limit to maxTags
+  return Array.from(new Set(sortedTags)).slice(0, maxTags);
 };
 
 // Generate a placeholder thumbnail if needed
@@ -87,8 +121,8 @@ export const createBookmark = (
   customTags: string[] = [],
   bookmarks: Bookmark[]
 ): Bookmark => {
-  // Generate auto tags
-  const autoTags = generateAutoTags(url, title);
+  // Generate auto tags (limited to 3)
+  const autoTags = generateAutoTags(url, title, 3);
   
   // Combine auto and custom tags
   const allTags = [...new Set([...autoTags, ...customTags])];

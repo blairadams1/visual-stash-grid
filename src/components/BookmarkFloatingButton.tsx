@@ -10,6 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { generateAutoTags } from '@/lib/bookmarkUtils';
 
 interface BookmarkFloatingButtonProps {
   onBookmarkAdded?: () => void;
@@ -28,20 +29,27 @@ const BookmarkFloatingButton = ({ onBookmarkAdded }: BookmarkFloatingButtonProps
       const tab = await getCurrentTab();
       
       if (tab) {
+        // Generate the 3 most logical tags automatically
+        const autoTags = generateAutoTags(tab.url, tab.title, 3);
+        
         const response = await sendMessage({
           type: 'ADD_BOOKMARK',
           bookmark: {
             url: tab.url,
             title: tab.title,
-            tags: []
+            tags: autoTags
           }
         });
         
         if (response.success) {
           setIsSuccess(true);
+          
+          // Show the tags that were automatically added
           toast({
             title: 'Bookmark saved!',
-            description: 'The page has been added to your bookmarks.',
+            description: autoTags.length > 0 
+              ? `Tagged with: ${autoTags.join(', ')}`
+              : 'The page has been added to your bookmarks.',
           });
           
           // Call the callback function to refresh bookmarks
