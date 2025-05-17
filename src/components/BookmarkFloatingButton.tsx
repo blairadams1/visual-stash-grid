@@ -28,15 +28,16 @@ const BookmarkFloatingButton = ({ onBookmarkAdded }: BookmarkFloatingButtonProps
       const tab = await getCurrentTab();
       
       if (tab) {
-        // Generate the 3 most logical tags automatically
-        const autoTags = generateAutoTags(tab.url, tab.title, 3);
+        // Generate tags automatically
+        const autoTagsData = generateAutoTags(tab.url, tab.title, 3);
+        const tagsList = autoTagsData.tags; // Extract the tags array from the returned object
         
         const response = await sendMessage({
           type: 'ADD_BOOKMARK',
           bookmark: {
             url: tab.url,
             title: tab.title,
-            tags: autoTags
+            tags: tagsList
           }
         });
         
@@ -46,8 +47,8 @@ const BookmarkFloatingButton = ({ onBookmarkAdded }: BookmarkFloatingButtonProps
           // Show the tags that were automatically added
           toast({
             title: 'Bookmark saved!',
-            description: autoTags.length > 0 
-              ? `Tagged with: ${autoTags.join(', ')}`
+            description: tagsList.length > 0 
+              ? `Tagged with: ${tagsList.join(', ')}`
               : 'The page has been added to your bookmarks.',
           });
           
