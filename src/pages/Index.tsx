@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -132,7 +131,7 @@ const Index = () => {
       <header className="bg-white shadow">
         <div className="container max-w-full px-4 py-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center">
+            <div className="flex flex-col">
               <h1 className="text-2xl font-bold text-bookmark-darkBlue">
                 TagMarked
                 {selectedCollection && (
@@ -141,7 +140,7 @@ const Index = () => {
                   </span>
                 )}
               </h1>
-              <p className="text-gray-500">Save and organize your bookmarks visually</p>
+              <p className="text-gray-500 mt-2">Save and organize your bookmarks visually</p>
             </div>
             
             <div className="flex items-center gap-3">
@@ -165,29 +164,6 @@ const Index = () => {
                 <RefreshCw className="h-5 w-5" />
               </Button>
 
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    aria-label="Open collections"
-                  >
-                    <FolderOpen className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left">
-                  <SheetHeader className="mb-4">
-                    <SheetTitle>Collections</SheetTitle>
-                    <SheetDescription>
-                      Organize your bookmarks into collections
-                    </SheetDescription>
-                  </SheetHeader>
-                  <CollectionsPanel 
-                    selectedCollectionId={selectedCollectionId}
-                    onSelectCollection={handleSelectCollection}
-                  />
-                </SheetContent>
-              </Sheet>
-              
               <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                 <PopoverTrigger asChild>
                   <Button 
@@ -213,6 +189,29 @@ const Index = () => {
                   </div>
                 </PopoverContent>
               </Popover>
+
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    aria-label="Open collections"
+                  >
+                    <FolderOpen className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                  <SheetHeader className="mb-4">
+                    <SheetTitle>Collections</SheetTitle>
+                    <SheetDescription>
+                      Organize your bookmarks into collections
+                    </SheetDescription>
+                  </SheetHeader>
+                  <CollectionsPanel 
+                    selectedCollectionId={selectedCollectionId}
+                    onSelectCollection={handleSelectCollection}
+                  />
+                </SheetContent>
+              </Sheet>
               
               <SettingsDropdown bookmarks={bookmarks} />
               

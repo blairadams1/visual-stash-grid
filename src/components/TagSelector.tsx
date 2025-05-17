@@ -25,6 +25,12 @@ const TagSelector: React.FC<TagSelectorProps> = ({
   const filteredTags = availableTags.filter((tag) =>
     tag.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+  // Get popular tags (up to 12) from available tags
+  // In a real app, you might want to track tag usage count instead
+  const popularTags = [...availableTags]
+    .filter(tag => !selectedTags.includes(tag))
+    .slice(0, 12);
 
   return (
     <div className="space-y-3">
@@ -65,6 +71,26 @@ const TagSelector: React.FC<TagSelectorProps> = ({
               {tag} ×
             </Badge>
           ))}
+        </div>
+      )}
+      
+      {/* Popular tags section */}
+      {popularTags.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-sm font-medium mb-2 text-gray-600">Popular Tags</h3>
+          <div className="flex flex-wrap gap-2">
+            {popularTags.map((tag) => (
+              <Button
+                key={tag}
+                variant="outline"
+                size="sm"
+                className="bg-gray-50 border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-softBlue hover:text-bookmark-darkBlue"
+                onClick={() => onTagSelect(tag)}
+              >
+                {tag}
+              </Button>
+            ))}
+          </div>
         </div>
       )}
       

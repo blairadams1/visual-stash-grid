@@ -25,7 +25,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
         ref={ref}
         className="group relative overflow-hidden rounded-lg shadow-md h-52 cursor-grab active:cursor-grabbing"
       >
-        <AspectRatio ratio={16 / 9} className="h-full w-full">
+        <div className="absolute inset-0">
           <img
             src={imageError ? generatePlaceholderThumbnail() : bookmark.thumbnail}
             alt={bookmark.title}
@@ -71,7 +71,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
               )}
             </div>
           </div>
-        </AspectRatio>
+        </div>
 
         {/* Delete button - visible on hover */}
         <Button
