@@ -189,15 +189,17 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto py-8">
         {/* Bookmark Form */}
         {showForm && (
           <>
-            <BookmarkForm
-              onAddBookmark={handleAddBookmark}
-              existingBookmarks={bookmarks}
-            />
-            <Separator className="my-6" />
+            <div className="px-4">
+              <BookmarkForm
+                onAddBookmark={handleAddBookmark}
+                existingBookmarks={bookmarks}
+              />
+              <Separator className="my-6" />
+            </div>
           </>
         )}
 
@@ -211,7 +213,7 @@ const Index = () => {
               onDeleteBookmark={handleDeleteBookmark}
             />
           ) : (
-            <div className="bg-white p-8 rounded-lg shadow text-center">
+            <div className="bg-white p-8 rounded-lg shadow text-center mx-4">
               <h2 className="text-xl font-medium mb-2">No bookmarks found</h2>
               <p className="text-gray-500 mb-4">
                 {bookmarks.length === 0

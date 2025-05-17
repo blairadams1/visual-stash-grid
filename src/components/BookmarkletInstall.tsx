@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { Download } from "lucide-react";
 
 const BookmarkletInstall = () => {
   const [showDialog, setShowDialog] = useState(false);
@@ -17,8 +18,8 @@ const BookmarkletInstall = () => {
   
   // Create bookmarklet code with improved behavior
   const bookmarkletCode = `javascript:(function(){
-    const popup = window.open('${window.location.origin}/extension?url='+encodeURIComponent(window.location.href)+'&title='+encodeURIComponent(document.title),'VisualBookmarker','width=400,height=500,resizable=yes');
-    if(!popup) alert('Please allow popups for Visual Bookmarker to work properly.');
+    const popup = window.open('${window.location.origin}/extension?url='+encodeURIComponent(window.location.href)+'&title='+encodeURIComponent(document.title),'TagMarked','width=400,height=500,resizable=yes');
+    if(!popup) alert('Please allow popups for TagMarked to work properly.');
   })();`;
 
   const handleCopyCode = () => {
@@ -33,18 +34,19 @@ const BookmarkletInstall = () => {
     <>
       <Button 
         variant="outline" 
-        className="bg-bookmark-softPurple border-bookmark-purple text-bookmark-darkPurple hover:bg-bookmark-purple hover:text-white"
+        className="bg-bookmark-softBlue border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-blue hover:text-white"
         onClick={() => setShowDialog(true)}
+        title="Install Extension"
       >
-        Install Extension
+        <Download className="h-5 w-5" />
       </Button>
       
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Install Visual Bookmarker</DialogTitle>
+            <DialogTitle>Install TagMarked</DialogTitle>
             <DialogDescription>
-              Add Visual Bookmarker to your browser for quick bookmarking
+              Add TagMarked to your browser for quick bookmarking
             </DialogDescription>
           </DialogHeader>
           
@@ -56,11 +58,11 @@ const BookmarkletInstall = () => {
             <div className="flex justify-center mb-6">
               <a 
                 href={bookmarkletCode}
-                className="px-4 py-2 bg-bookmark-purple text-white rounded-md no-underline font-medium"
+                className="px-4 py-2 bg-bookmark-blue text-white rounded-md no-underline font-medium"
                 onClick={(e) => e.preventDefault()}
                 draggable="true"
               >
-                📚 Visual Bookmarker
+                📚 TagMarked
               </a>
             </div>
             
