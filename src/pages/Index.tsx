@@ -10,7 +10,6 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
-import BookmarkletInstall from "@/components/BookmarkletInstall";
 import BookmarkFloatingButton from "@/components/BookmarkFloatingButton";
 import { Filter, Plus, RefreshCw, FolderOpen } from "lucide-react";
 import { 
@@ -28,6 +27,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import SettingsDropdown from "@/components/SettingsDropdown";
 
 const Index = () => {
   // State for bookmarks from local storage
@@ -133,41 +133,15 @@ const Index = () => {
         <div className="container max-w-full px-4 py-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="mr-3 md:mr-4"
-                    aria-label="Open collections"
-                  >
-                    <FolderOpen className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left">
-                  <SheetHeader className="mb-4">
-                    <SheetTitle>Collections</SheetTitle>
-                    <SheetDescription>
-                      Organize your bookmarks into collections
-                    </SheetDescription>
-                  </SheetHeader>
-                  <CollectionsPanel 
-                    selectedCollectionId={selectedCollectionId}
-                    onSelectCollection={handleSelectCollection}
-                  />
-                </SheetContent>
-              </Sheet>
-
-              <div>
-                <h1 className="text-2xl font-bold text-bookmark-darkBlue">
-                  TagMarked
-                  {selectedCollection && (
-                    <span className="ml-2 text-gray-500">
-                      / {selectedCollection.name}
-                    </span>
-                  )}
-                </h1>
-                <p className="text-gray-500">Save and organize your bookmarks visually</p>
-              </div>
+              <h1 className="text-2xl font-bold text-bookmark-darkBlue">
+                TagMarked
+                {selectedCollection && (
+                  <span className="ml-2 text-gray-500">
+                    / {selectedCollection.name}
+                  </span>
+                )}
+              </h1>
+              <p className="text-gray-500">Save and organize your bookmarks visually</p>
             </div>
             
             <div className="flex items-center gap-3">
@@ -190,6 +164,29 @@ const Index = () => {
               >
                 <RefreshCw className="h-5 w-5" />
               </Button>
+
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    aria-label="Open collections"
+                  >
+                    <FolderOpen className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                  <SheetHeader className="mb-4">
+                    <SheetTitle>Collections</SheetTitle>
+                    <SheetDescription>
+                      Organize your bookmarks into collections
+                    </SheetDescription>
+                  </SheetHeader>
+                  <CollectionsPanel 
+                    selectedCollectionId={selectedCollectionId}
+                    onSelectCollection={handleSelectCollection}
+                  />
+                </SheetContent>
+              </Sheet>
               
               <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                 <PopoverTrigger asChild>
@@ -217,7 +214,7 @@ const Index = () => {
                 </PopoverContent>
               </Popover>
               
-              <BookmarkletInstall />
+              <SettingsDropdown bookmarks={bookmarks} />
               
               <div className="relative w-full md:w-64">
                 <Input

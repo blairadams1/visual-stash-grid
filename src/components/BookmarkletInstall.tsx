@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { Download } from "lucide-react";
 
 const BookmarkletInstall = () => {
   const [showDialog, setShowDialog] = useState(false);
@@ -32,14 +31,9 @@ const BookmarkletInstall = () => {
 
   return (
     <>
-      <Button 
-        variant="outline" 
-        className="bg-bookmark-softBlue border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-blue hover:text-white"
-        onClick={() => setShowDialog(true)}
-        title="Install Extension"
-      >
-        <Download className="h-5 w-5" />
-      </Button>
+      <div onClick={() => setShowDialog(true)} className="w-full">
+        Install TagMarked
+      </div>
       
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-md">
