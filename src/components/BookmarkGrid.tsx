@@ -40,7 +40,8 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     
     // Set drag preview image (clone of the dragged element)
     if (event.dataTransfer) {
-      const draggedElement = event.currentTarget;
+      // Cast the currentTarget to HTMLElement to access offsetWidth and offsetHeight
+      const draggedElement = event.currentTarget as HTMLElement;
       const clone = draggedElement.cloneNode(true) as HTMLElement;
       
       // Style the clone
@@ -50,6 +51,9 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
       clone.style.position = 'absolute';
       clone.style.top = '-1000px';
       clone.style.left = '-1000px';
+      clone.style.border = '2px dashed #3b82f6';
+      clone.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+      clone.style.borderRadius = '8px';
       
       // Append clone to document body, set as drag image, then remove
       document.body.appendChild(clone);
@@ -142,7 +146,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-1">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-1 mx-0">
       {bookmarks.map((bookmark, index) => (
         <div
           key={bookmark.id}
