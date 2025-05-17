@@ -110,7 +110,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container max-w-full px-4 py-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-bookmark-darkBlue">TagMarked</h1>
@@ -189,11 +189,11 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto py-8">
+      <main className="container max-w-full py-8">
         {/* Bookmark Form */}
         {showForm && (
           <>
-            <div className="px-4">
+            <div className="px-2">
               <BookmarkForm
                 onAddBookmark={handleAddBookmark}
                 existingBookmarks={bookmarks}
@@ -204,7 +204,7 @@ const Index = () => {
         )}
 
         {/* Bookmark Grid */}
-        <div className="w-full">
+        <div className="w-full px-2">
           {sortedBookmarks.length > 0 ? (
             <BookmarkGrid
               bookmarks={sortedBookmarks}
@@ -213,7 +213,7 @@ const Index = () => {
               onDeleteBookmark={handleDeleteBookmark}
             />
           ) : (
-            <div className="bg-white p-8 rounded-lg shadow text-center mx-4">
+            <div className="bg-white p-8 rounded-lg shadow text-center mx-2">
               <h2 className="text-xl font-medium mb-2">No bookmarks found</h2>
               <p className="text-gray-500 mb-4">
                 {bookmarks.length === 0

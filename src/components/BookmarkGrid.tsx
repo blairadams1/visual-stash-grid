@@ -146,7 +146,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-1 mx-0">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 px-0 mx-0">
       {bookmarks.map((bookmark, index) => (
         <div
           key={bookmark.id}
