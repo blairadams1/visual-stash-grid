@@ -60,6 +60,9 @@ export const sendMessage = async (message: ExtensionMessage): Promise<ExtensionR
         existingBookmarks[existingBookmarkIndex] = updatedBookmark;
         updatedBookmarks = [...existingBookmarks];
         
+        // Save to localStorage
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedBookmarks));
+        
         // Return success with "updated" message
         return { 
           success: true, 
