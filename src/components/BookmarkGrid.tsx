@@ -60,6 +60,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
 
   // Function to handle drag start for bookmarks
   const handleDragStart = (index: number, event: React.DragEvent, type: 'bookmark' | 'folder') => {
+    event.stopPropagation();
     setDraggedIndex(index);
     setDraggedType(type);
     
@@ -84,6 +85,9 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
       document.body.appendChild(clone);
       event.dataTransfer.setDragImage(clone, draggedElement.offsetWidth / 2, draggedElement.offsetHeight / 2);
       
+      // Add data to dataTransfer to enable drag and drop
+      event.dataTransfer.setData('text/plain', index.toString());
+      
       setTimeout(() => {
         document.body.removeChild(clone);
       }, 0);
@@ -93,7 +97,12 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   // Function to handle drag over
   const handleDragOver = (event: React.DragEvent, index: number, type: 'bookmark' | 'folder' = 'bookmark', id?: string) => {
     event.preventDefault();
-    setTargetIndex(index);
+    event.stopPropagation();
+    
+    // Only update target index if it's changed (prevents unnecessary renders)
+    if (index !== targetIndex) {
+      setTargetIndex(index);
+    }
     
     // If dragging over a folder, highlight it as a drop target
     if (type === 'folder' && id) {
@@ -103,8 +112,17 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     }
   };
 
+  // Function to handle drag enter (for better visual feedback)
+  const handleDragEnter = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
   // Function to handle drag end
-  const handleDragEnd = () => {
+  const handleDragEnd = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
     if (draggedType === 'bookmark' && draggedIndex !== null) {
       // If bookmark is dropped on a folder
       if (draggedOverFolder !== null) {
@@ -141,6 +159,15 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     setTargetIndex(null);
     setDraggedType(null);
     setDraggedOverFolder(null);
+  };
+  
+  // Add a drop handler to ensure drag end fires properly
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Let the dragEnd handler manage the actual logic
+    // This ensures drop events are properly captured
   };
 
   // Touch events handling for mobile
@@ -286,18 +313,24 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   };
 
   return (
-    <div className={`grid gap-4 px-0 mx-0 ${getColumnClasses()} ${layout === 'list' ? 'bookmark-grid-list' : layout === 'compact' ? 'bookmark-grid-compact' : ''}`}>
+    <div 
+      className={`grid gap-4 px-0 mx-0 ${getColumnClasses()} ${layout === 'list' ? 'bookmark-grid-list' : layout === 'compact' ? 'bookmark-grid-compact' : ''}`}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
+    >
       {allItems.map(({ item, type }, index) => (
         <div
           key={item.id}
           draggable={!isMobile}
           onDragStart={(e) => handleDragStart(index, e, type)}
           onDragOver={(e) => handleDragOver(e, index, type, type === 'folder' ? item.id : undefined)}
+          onDragEnter={handleDragEnter}
           onDragEnd={handleDragEnd}
+          onDrop={handleDrop}
           onTouchStart={() => isMobile && handleTouchStart(index, type)}
           onTouchMove={(e) => isMobile && handleTouchMove(e, index, type, type === 'folder' ? item.id : undefined)}
           onTouchEnd={() => isMobile && handleTouchEnd()}
-          className={`transition-transform ${
+          className={`transition-transform relative ${
             (draggedIndex === index && draggedType === type) ? "opacity-50" : "opacity-100"
           } ${
             type === 'folder' && draggedOverFolder === item.id
@@ -305,7 +338,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
               : ""
           }`}
         >
-          {index === targetIndex && draggedIndex !== null && draggedIndex !== index && (
+          {draggedIndex !== null && draggedIndex !== index && targetIndex === index && (
             <div className="absolute top-0 left-0 w-full h-1 bg-blue-500 z-10"></div>
           )}
           {type === 'bookmark' ? (
