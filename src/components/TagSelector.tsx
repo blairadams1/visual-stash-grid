@@ -26,11 +26,10 @@ const TagSelector: React.FC<TagSelectorProps> = ({
     tag.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  // Get popular tags (up to 12) from available tags
-  // In a real app, you might want to track tag usage count instead
+  // Get top 15 popular tags from available tags
   const popularTags = [...availableTags]
     .filter(tag => !selectedTags.includes(tag))
-    .slice(0, 12);
+    .slice(0, 15);
 
   return (
     <div className="space-y-3">
@@ -97,7 +96,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
       {/* Available tags */}
       <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
         {filteredTags
-          .filter((tag) => !selectedTags.includes(tag))
+          .filter((tag) => !selectedTags.includes(tag) && !popularTags.includes(tag))
           .map((tag) => (
             <Badge
               key={tag}

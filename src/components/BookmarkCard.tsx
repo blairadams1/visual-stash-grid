@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { generatePlaceholderThumbnail } from "@/lib/bookmarkUtils";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -33,8 +32,8 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
             className="w-full h-full object-cover"
           />
           
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10">
+          {/* Gradient overlay - only at the bottom */}
+          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/80 to-transparent">
             <a
               href={bookmark.url}
               target="_blank"

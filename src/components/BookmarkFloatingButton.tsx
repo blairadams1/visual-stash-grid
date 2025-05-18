@@ -57,9 +57,14 @@ const BookmarkFloatingButton = ({ onBookmarkAdded }: BookmarkFloatingButtonProps
             onBookmarkAdded();
           }
           
-          // Reset success state after 2 seconds
+          // Reset success state after 2 seconds and auto-close if in a popup
           setTimeout(() => {
             setIsSuccess(false);
+            
+            // Check if we're in a popup window
+            if (window.opener || window.parent !== window) {
+              window.close();
+            }
           }, 2000);
         } else {
           toast({
