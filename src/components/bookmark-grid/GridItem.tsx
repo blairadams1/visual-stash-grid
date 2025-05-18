@@ -26,6 +26,7 @@ interface GridItemProps {
   handleTouchStart?: (index: number, type: 'bookmark' | 'folder', e: React.TouchEvent) => void;
   handleTouchMove?: (e: React.TouchEvent, index: number, type: 'bookmark' | 'folder', id?: string) => void;
   handleTouchEnd?: (e: React.TouchEvent) => void;
+  heightClass?: string;
 }
 
 const GridItem: React.FC<GridItemProps> = ({
@@ -48,7 +49,8 @@ const GridItem: React.FC<GridItemProps> = ({
   handleDrop,
   handleTouchStart,
   handleTouchMove,
-  handleTouchEnd
+  handleTouchEnd,
+  heightClass = ''
 }) => {
   // Generate unique key for item
   const itemKey = `${type}-${item.id}`;
@@ -76,7 +78,7 @@ const GridItem: React.FC<GridItemProps> = ({
         isFolderTarget
           ? "ring-2 ring-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)]"
           : ""
-      }`}
+      } ${heightClass}`}
       data-folder-id={type === 'folder' ? item.id : undefined}
       draggable={!isMobile}
       onDragStart={(e) => handleDragStart(index, e, type)}

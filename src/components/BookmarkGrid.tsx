@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import GridItem from "./bookmark-grid/GridItem";
 import { useFilterUtils } from "./bookmark-grid/FilterUtils";
-import { getColumnClasses } from "./bookmark-grid/LayoutUtils";
+import { getColumnClasses, getCardHeightClasses } from "./bookmark-grid/LayoutUtils";
 import { useDragDrop, DragDropHandler } from "./bookmark-grid/DragDropHandler";
 import { TouchHandler } from "./bookmark-grid/TouchHandler";
 
@@ -122,6 +122,9 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     ...filteredBookmarks.map(bookmark => ({ item: bookmark, type: 'bookmark' as const }))
   ].sort((a, b) => a.item.order - b.item.order);
 
+  // Get card height classes
+  const heightClasses = getCardHeightClasses(cardSize);
+
   return (
     <div 
       ref={gridRef}
@@ -153,6 +156,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
           handleTouchStart={handleTouchStart}
           handleTouchMove={handleTouchMove}
           handleTouchEnd={handleTouchEnd}
+          heightClass={heightClasses}
         />
       ))}
     </div>

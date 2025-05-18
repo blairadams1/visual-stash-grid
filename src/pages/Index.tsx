@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -104,6 +103,8 @@ const Index = () => {
       bookmark.tags,
       bookmark.folderId
     );
+    // Auto refresh bookmarks
+    refreshBookmarks();
   };
 
   // Handle adding a new folder
@@ -179,33 +180,35 @@ const Index = () => {
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       <div className="flex min-h-screen">
-        {/* Collections Sidebar */}
-        {showSidebar && (
-          <div className={`w-64 fixed top-0 left-0 bottom-0 z-40 h-screen p-4 overflow-y-auto transition-transform ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow`}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold">Collections</h2>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={toggleSidebar}
-              >
-                <MoveLeft className="h-4 w-4" />
-              </Button>
-            </div>
-            <CollectionsPanel 
-              selectedCollectionId={selectedCollectionId}
-              onSelectCollection={(id) => {
-                setSelectedCollectionId(id);
-                // On mobile, close the sidebar after selecting a collection
-                if (window.innerWidth < 768) {
-                  setShowSidebar(false);
-                }
-              }}
-            />
+        {/* Collections Sidebar with smooth transition */}
+        <div 
+          className={`w-64 fixed top-0 left-0 bottom-0 z-40 h-screen p-4 overflow-y-auto transform transition-transform duration-300 ${
+            showSidebar ? 'translate-x-0' : '-translate-x-full'
+          } ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow`}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold">Collections</h2>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={toggleSidebar}
+            >
+              <MoveLeft className="h-4 w-4" />
+            </Button>
           </div>
-        )}
+          <CollectionsPanel 
+            selectedCollectionId={selectedCollectionId}
+            onSelectCollection={(id) => {
+              setSelectedCollectionId(id);
+              // On mobile, close the sidebar after selecting a collection
+              if (window.innerWidth < 768) {
+                setShowSidebar(false);
+              }
+            }}
+          />
+        </div>
 
-        <div className={`flex-1 flex flex-col ${showSidebar ? 'md:ml-64' : ''}`}>
+        <div className={`flex-1 flex flex-col transition-margin duration-300 ${showSidebar ? 'md:ml-64' : ''}`}>
           <header className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow`}>
             <div className="container max-w-full px-4 py-3">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -354,7 +357,11 @@ const Index = () => {
             {showForm && (
               <div className="px-4 py-4 bg-white dark:bg-gray-800 mb-6 rounded-lg shadow-sm">
                 <BookmarkForm
-                  onAddBookmark={handleAddBookmark}
+                  onAddBookmark={(bookmark) => {
+                    handleAddBookmark(bookmark);
+                    // Auto refresh bookmarks
+                    refreshBookmarks();
+                  }}
                   existingBookmarks={bookmarks}
                   initialTitle={currentPage.title}
                   initialUrl={currentPage.url}

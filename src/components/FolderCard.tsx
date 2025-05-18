@@ -41,8 +41,8 @@ const FolderCard: React.FC<FolderCardProps> = ({
       onDoubleClick={handleDoubleClick}
     >
       <CardContent className="p-0 h-full flex flex-col relative">
-        {/* Folder name at top left with adjusted padding: +10px left, -10px top */}
-        <div className="absolute top-[10px] left-[30px] z-10">
+        {/* Folder name at top left using percentage positioning */}
+        <div className="absolute left-[6%] top-[5%] z-10">
           <span className="text-sm font-medium truncate text-amber-800 dark:text-amber-200">
             {folder.name}
           </span>
@@ -57,8 +57,8 @@ const FolderCard: React.FC<FolderCardProps> = ({
           />
         </div>
 
-        {/* Edit buttons positioned at bottom right with moved 20px more to the right */}
-        <div className="absolute bottom-[20px] right-[40px] z-10 flex space-x-3">
+        {/* Edit buttons positioned at bottom right with percentage positioning */}
+        <div className="absolute bottom-[8%] right-[6%] z-10 flex space-x-3">
           <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
               <DialogTrigger asChild>

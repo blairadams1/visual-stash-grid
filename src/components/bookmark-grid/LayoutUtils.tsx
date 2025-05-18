@@ -13,3 +13,15 @@ export const getColumnClasses = (layout: 'grid' | 'list' | 'compact', cardSize: 
       return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5';
   }
 };
+
+// Add card height classes based on size
+export const getCardHeightClasses = (cardSize: string) => {
+  switch (cardSize) {
+    case 'small':
+      return 'h-48';
+    case 'large':
+      return 'h-80';
+    default: // medium
+      return 'h-64';
+  }
+};
