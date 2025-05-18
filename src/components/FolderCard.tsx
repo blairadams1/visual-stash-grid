@@ -60,14 +60,14 @@ const FolderCard: React.FC<FolderCardProps> = ({
   const isMediumCard = cardSize === 'medium';
   const isLargeCard = cardSize === 'large';
 
-  // Improved positioning for folder name and content
+  // Updated positioning for folder name - moved to the bottom half of the card
   const getFolderNameClass = () => {
     if (isLargeCard) {
-      return 'top-6 text-base';
+      return 'bottom-24 text-base'; // Higher position for large cards
     } else if (isMediumCard) {
-      return 'top-4 text-sm';
+      return 'bottom-14 text-sm'; // Medium position
     } else {
-      return 'top-2 text-xs';
+      return 'bottom-8 text-xs'; // Lower position for small cards to avoid overlap
     }
   };
 
@@ -84,11 +84,11 @@ const FolderCard: React.FC<FolderCardProps> = ({
             <img
               src="/lovable-uploads/ee3d1214-9131-4ec4-9312-ddc55b3b8d6f.png"
               alt={folder.name}
-              className="w-[90%] h-[90%] object-contain" // Increased size for better visibility
+              className="w-[92%] h-[92%] object-contain" // Further increased size for better visibility
             />
           </div>
           
-          {/* Folder name at top with better positioning */}
+          {/* Folder name repositioned to bottom half */}
           <div className={`absolute left-0 right-0 px-4 ${getFolderNameClass()} z-10 text-center`}>
             <span className="font-medium truncate text-amber-800 dark:text-amber-200 bg-amber-50/70 dark:bg-amber-900/70 px-2 py-1 rounded">
               {folder.name}

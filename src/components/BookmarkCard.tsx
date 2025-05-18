@@ -1,4 +1,3 @@
-
 import { Bookmark } from "@/lib/bookmarkUtils";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -136,14 +135,15 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
     const isMediumCard = cardSize === 'medium';
     const isLargeCard = cardSize === 'large';
 
-    // Improved positioning classes for different card sizes - adjusted for large cards
+    // Updated positioning classes for different card sizes - ensures content is in bottom half
     const getContentClasses = () => {
       if (isLargeCard) {
-        return 'bottom-0 left-0 right-0 px-4 py-5 pb-8 translate-y-[-15%]'; // Moved up 15% for large cards
+        return 'bottom-0 left-0 right-0 px-4 py-5 pb-8 translate-y-[-15%]';
       } else if (isMediumCard) {
         return 'bottom-0 left-0 right-0 p-3 pb-3';
       } else {
-        return 'bottom-0 left-0 right-0 p-2 pb-2';
+        // For small cards, position text at the bottom 40% of the card
+        return 'bottom-0 left-0 right-0 p-2 pb-2 h-[40%]';
       }
     };
 
@@ -156,8 +156,8 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
     // Determine how many tags to show based on card size
     const visibleTags = isLargeCard ? 8 : isMediumCard ? 4 : 2;
 
-    // Updated gradient overlay - taller to ensure text is readable
-    const gradientOverlayClass = "absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent";
+    // Updated gradient overlay - starts from the middle of the card for better text contrast
+    const gradientOverlayClass = "absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent";
 
     return (
       <>
@@ -175,7 +175,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
                 className="w-full h-full object-cover"
               />
               
-              {/* Improved gradient overlay */}
+              {/* Improved gradient overlay - starts from middle of card */}
               <div className={gradientOverlayClass}>
                 <a
                   href={bookmark.url}

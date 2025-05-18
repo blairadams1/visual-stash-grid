@@ -18,11 +18,11 @@ export const getColumnClasses = (layout: 'grid' | 'list' | 'compact', cardSize: 
 export const getCardHeightClasses = (cardSize: string) => {
   switch (cardSize) {
     case 'small':
-      return 'h-36'; // Slightly increased from h-32
+      return 'h-36'; // Consistent height for small cards
     case 'large':
       return 'h-72'; // Reduced from h-80 for better proportions
     default: // medium
-      return 'h-44'; // Slightly increased from h-40
+      return 'h-44'; // Consistent height for medium cards
   }
 };
 
