@@ -112,7 +112,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                 <DialogHeader>
                   <DialogTitle>Manage Tags</DialogTitle>
                 </DialogHeader>
-                <TagManager bookmarks={bookmarks} />
+                <TagManager />
               </DialogContent>
             </Dialog>
           </DropdownMenuGroup>
