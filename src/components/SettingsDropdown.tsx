@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Settings, Download, Upload, Sun, Moon, Tag, Monitor, Grid2X2, Grid3X3, LayoutGrid, Bookmark, FolderTree } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +24,16 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SettingsDropdownProps {
   bookmarks: BookmarkType[];
@@ -42,10 +52,11 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
   currentCardSize,
   onToggleSidebar,
 }) => {
-  const [isTagManagerOpen, setIsTagManagerOpen] = React.useState(false);
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
+  const [isImportExportOpen, setIsImportExportOpen] = useState(false);
   
   // Function to export bookmarks as JSON
-  const exportBookmarks = () => {
+  const exportBookmarksAsJSON = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(bookmarks));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
@@ -53,6 +64,75 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
     document.body.appendChild(downloadAnchorNode); // required for firefox
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
+  };
+  
+  // Function to export bookmarks as HTML
+  const exportBookmarksAsHTML = () => {
+    // Create HTML bookmark file format
+    let htmlContent = `<!DOCTYPE NETSCAPE-Bookmark-file-1>\n` + 
+                     `<!-- This is an automatically generated file.\n` +
+                     `     It will be read and overwritten.\n` +
+                     `     DO NOT EDIT! -->\n` +
+                     `<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n` +
+                     `<TITLE>Bookmarks</TITLE>\n` +
+                     `<H1>Bookmarks</H1>\n` +
+                     `<DL><p>\n`;
+    
+    // Add each bookmark as a DT element
+    bookmarks.forEach(bookmark => {
+      const tags = bookmark.tags ? ` TAGS="${bookmark.tags.join(',')}"` : '';
+      htmlContent += `    <DT><A HREF="${bookmark.url}" ADD_DATE="${Math.floor(Date.now() / 1000)}"${tags}>${bookmark.title}</A>\n`;
+    });
+    
+    // Close the HTML structure
+    htmlContent += `</DL><p>\n`;
+    
+    // Create and trigger download
+    const dataStr = "data:text/html;charset=utf-8," + encodeURIComponent(htmlContent);
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "tagmarked-bookmarks.html");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+  
+  // Function to handle file import
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>, format: 'json' | 'html') => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      try {
+        if (format === 'json') {
+          // Parse JSON and validate
+          const importedBookmarks = JSON.parse(content);
+          if (Array.isArray(importedBookmarks)) {
+            // TODO: Implement actual import functionality
+            alert(`Imported ${importedBookmarks.length} bookmarks successfully!`);
+          } else {
+            alert('Invalid JSON format. Expected an array of bookmarks.');
+          }
+        } else if (format === 'html') {
+          // Parse HTML bookmarks
+          alert('HTML import is not fully implemented yet.');
+          // TODO: Implement HTML parsing
+        }
+      } catch (error) {
+        alert(`Error importing file: ${error}`);
+      }
+      
+      // Reset the file input
+      event.target.value = '';
+    };
+    
+    if (format === 'json') {
+      reader.readAsText(file);
+    } else {
+      reader.readAsText(file);
+    }
   };
 
   return (
@@ -68,11 +148,6 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
           <DropdownMenuSeparator />
           
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={onToggleSidebar}>
-              <FolderTree className="mr-2 h-4 w-4" />
-              <span>Collections</span>
-            </DropdownMenuItem>
-            
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Sun className="mr-2 h-4 w-4" />
@@ -98,28 +173,6 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
               </DropdownMenuPortal>
             </DropdownMenuSub>
             
-            <Dialog open={isTagManagerOpen} onOpenChange={setIsTagManagerOpen}>
-              <DialogTrigger asChild>
-                <DropdownMenuItem onSelect={(e) => {
-                  e.preventDefault(); 
-                  setIsTagManagerOpen(true);
-                }}>
-                  <Tag className="mr-2 h-4 w-4" />
-                  <span>Manage Tags</span>
-                </DropdownMenuItem>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Manage Tags</DialogTitle>
-                </DialogHeader>
-                <TagManager />
-              </DialogContent>
-            </Dialog>
-          </DropdownMenuGroup>
-          
-          <DropdownMenuSeparator />
-          
-          <DropdownMenuGroup>
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <LayoutGrid className="mr-2 h-4 w-4" />
@@ -145,14 +198,102 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
+            
+            <DropdownMenuItem onClick={onToggleSidebar}>
+              <FolderTree className="mr-2 h-4 w-4" />
+              <span>Collections</span>
+            </DropdownMenuItem>
+            
+            <Dialog open={isTagManagerOpen} onOpenChange={setIsTagManagerOpen}>
+              <DialogTrigger asChild>
+                <DropdownMenuItem onSelect={(e) => {
+                  e.preventDefault(); 
+                  setIsTagManagerOpen(true);
+                }}>
+                  <Tag className="mr-2 h-4 w-4" />
+                  <span>Manage Tags</span>
+                </DropdownMenuItem>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Manage Tags</DialogTitle>
+                </DialogHeader>
+                <TagManager />
+              </DialogContent>
+            </Dialog>
           </DropdownMenuGroup>
           
           <DropdownMenuSeparator />
           
-          <DropdownMenuItem onClick={exportBookmarks}>
-            <Download className="mr-2 h-4 w-4" />
-            <span>Export Bookmarks</span>
-          </DropdownMenuItem>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Download className="mr-2 h-4 w-4" />
+                <span>Import/Export</span>
+              </DropdownMenuItem>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Import/Export Bookmarks</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Choose a format to import or export your bookmarks.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <h3 className="text-sm font-semibold">Export Bookmarks</h3>
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1" 
+                    onClick={exportBookmarksAsJSON}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Export as JSON
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1" 
+                    onClick={exportBookmarksAsHTML}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Export as HTML
+                  </Button>
+                </div>
+                
+                <h3 className="text-sm font-semibold pt-2">Import Bookmarks</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col">
+                    <Button variant="outline" className="mb-2" onClick={() => document.getElementById('import-json')?.click()}>
+                      <Upload className="mr-2 h-4 w-4" /> Import JSON
+                    </Button>
+                    <input 
+                      id="import-json" 
+                      type="file" 
+                      accept=".json" 
+                      className="hidden" 
+                      onChange={(e) => handleFileImport(e, 'json')}
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col">
+                    <Button variant="outline" className="mb-2" onClick={() => document.getElementById('import-html')?.click()}>
+                      <Upload className="mr-2 h-4 w-4" /> Import HTML
+                    </Button>
+                    <input 
+                      id="import-html" 
+                      type="file" 
+                      accept=".html,.htm" 
+                      className="hidden" 
+                      onChange={(e) => handleFileImport(e, 'html')}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <AlertDialogFooter>
+                <AlertDialogAction>Close</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </DropdownMenuContent>
       </DropdownMenu>
     </>

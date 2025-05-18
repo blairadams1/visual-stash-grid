@@ -1,3 +1,4 @@
+
 import { Bookmark, Collection, Folder } from "@/lib/bookmarkUtils";
 import BookmarkCard from "./BookmarkCard";
 import FolderCard from "./FolderCard";
@@ -20,6 +21,8 @@ interface BookmarkGridProps {
   layout?: 'grid' | 'list' | 'compact';
   cardSize?: string;
   currentFolderId?: string | null;
+  selectedTags?: string[];
+  searchQuery?: string;
 }
 
 const BookmarkGrid: React.FC<BookmarkGridProps> = ({
@@ -38,6 +41,8 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   layout = 'grid',
   cardSize = 'medium',
   currentFolderId = null,
+  selectedTags = [],
+  searchQuery = '',
 }) => {
   // State for drag and drop
   const [draggedItem, setDraggedItem] = useState<{index: number, type: 'bookmark' | 'folder'} | null>(null);
@@ -94,16 +99,17 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     }
   };
 
-  // Find the closest position for drop indicator
-  const findDropPosition = (event: React.DragEvent, elementRect: DOMRect) => {
+  // Find the drop position based on mouse position relative to item being dragged over
+  const findDropPosition = (event: React.DragEvent, element: HTMLElement) => {
+    const rect = element.getBoundingClientRect();
     const mouseX = event.clientX;
-    const mouseY = event.clientY;
     
-    // Compare distances to left and right edges
-    const distanceFromLeft = mouseX - elementRect.left;
-    const distanceFromRight = elementRect.right - mouseX;
+    // We only want vertical lines between items, so we'll determine if the mouse
+    // is closer to the left or right edge of the card
+    const centerX = rect.left + rect.width / 2;
     
-    return distanceFromLeft < distanceFromRight ? 'before' : 'after';
+    // Return "before" if mouse is on left half, "after" if on right half
+    return mouseX < centerX ? 'before' : 'after';
   };
 
   // Function to handle drag over
@@ -128,10 +134,9 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     
     // Get the element being dragged over for positional calculations
     const element = event.currentTarget as HTMLElement;
-    const rect = element.getBoundingClientRect();
     
     // Determine position (before or after) based on mouse position relative to element center
-    const position = findDropPosition(event, rect);
+    const position = findDropPosition(event, element);
     
     // Update drop indicator position
     setDropIndicator({index, position});
@@ -148,13 +153,13 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
       
       // If bookmark is dropped on a folder
       if (draggedOverFolder !== null) {
-        const draggedBookmark = getFilteredBookmarks()[draggedIndex];
+        const draggedBookmark = getFilteredItems().bookmarks[draggedIndex];
         onMoveToFolder(draggedBookmark.id, draggedOverFolder);
       } 
       // If bookmark is reordered within the grid
       else if (dropIndex !== -1 && position !== null && draggedIndex !== dropIndex) {
         // Get filtered bookmarks to work with
-        const filteredBooks = getFilteredBookmarks();
+        const filteredBooks = getFilteredItems().bookmarks;
         
         // Create a copy of all bookmarks
         const updatedBookmarks = [...bookmarks];
@@ -267,7 +272,8 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
       if (itemIndex !== -1) {
         // Determine position (before or after)
         const touchX = touch.clientX;
-        const position = touchX < (rect.left + rect.width / 2) ? 'before' : 'after';
+        const centerX = rect.left + rect.width / 2;
+        const position = touchX < centerX ? 'before' : 'after';
         
         setTouchCurrentPos({index: itemIndex, position});
       }
@@ -282,7 +288,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     
     // If dropped on a folder
     if (touchOverFolder !== null) {
-      const draggedBookmark = getFilteredBookmarks()[touchStartPos.index];
+      const draggedBookmark = getFilteredItems().bookmarks[touchStartPos.index];
       onMoveToFolder(draggedBookmark.id, touchOverFolder);
     }
     // If reordering
@@ -291,7 +297,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
       const { index: dropIndex, position } = touchCurrentPos;
       
       // Get filtered bookmarks to work with
-      const filteredBooks = getFilteredBookmarks();
+      const filteredBooks = getFilteredItems().bookmarks;
       
       // Create a copy of all bookmarks
       const updatedBookmarks = [...bookmarks];
@@ -338,49 +344,62 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     setTouchOverFolder(null);
   };
 
-  // Filter and group bookmarks by collection and folder
-  const getFilteredBookmarks = () => {
-    let filtered = [...bookmarks];
+  // Filter and group bookmarks by collection, folder, tags, and search query
+  const getFilteredItems = () => {
+    let filteredBookmarks = [...bookmarks];
+    let filteredFolders = [...folders];
     
     // Filter by collection if selected
     if (selectedCollectionId) {
       const subCollectionIds = getSubCollectionIds(selectedCollectionId);
-      filtered = filtered.filter(
+      filteredBookmarks = filteredBookmarks.filter(
         bookmark => bookmark.collectionId === selectedCollectionId || 
                   (bookmark.collectionId && subCollectionIds.includes(bookmark.collectionId))
       );
-    }
-    
-    // Filter by current folder if set
-    if (currentFolderId !== null) {
-      filtered = filtered.filter(bookmark => bookmark.folderId === currentFolderId);
-    } else {
-      // If not in a folder view, only show bookmarks that are not in any folder
-      filtered = filtered.filter(bookmark => !bookmark.folderId);
-    }
-    
-    return filtered;
-  };
-  
-  // Get filtered folders based on selected collection
-  const getFilteredFolders = () => {
-    if (currentFolderId !== null) {
-      // Don't show folders when inside a folder
-      return [];
-    }
-    
-    let filtered = [...folders];
-    
-    // Filter by collection if selected
-    if (selectedCollectionId) {
-      const subCollectionIds = getSubCollectionIds(selectedCollectionId);
-      filtered = filtered.filter(
+      
+      filteredFolders = filteredFolders.filter(
         folder => folder.collectionId === selectedCollectionId || 
                  (folder.collectionId && subCollectionIds.includes(folder.collectionId))
       );
     }
     
-    return filtered;
+    // Filter by current folder if set
+    if (currentFolderId !== null) {
+      filteredBookmarks = filteredBookmarks.filter(bookmark => bookmark.folderId === currentFolderId);
+      // Don't show folders when inside a folder
+      filteredFolders = [];
+    } else {
+      // If not in a folder view, only show bookmarks that are not in any folder
+      filteredBookmarks = filteredBookmarks.filter(bookmark => !bookmark.folderId);
+    }
+    
+    // Filter by selected tags
+    if (selectedTags && selectedTags.length > 0) {
+      filteredBookmarks = filteredBookmarks.filter(bookmark => 
+        selectedTags.every(tag => bookmark.tags && bookmark.tags.includes(tag))
+      );
+      
+      filteredFolders = filteredFolders.filter(folder => 
+        folder.tags && selectedTags.every(tag => folder.tags.includes(tag))
+      );
+    }
+    
+    // Filter by search query
+    if (searchQuery && searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase().trim();
+      filteredBookmarks = filteredBookmarks.filter(bookmark => 
+        bookmark.title.toLowerCase().includes(query) || 
+        bookmark.url.toLowerCase().includes(query) ||
+        (bookmark.tags && bookmark.tags.some(tag => tag.toLowerCase().includes(query)))
+      );
+      
+      filteredFolders = filteredFolders.filter(folder => 
+        folder.name.toLowerCase().includes(query) ||
+        (folder.tags && folder.tags.some(tag => tag.toLowerCase().includes(query)))
+      );
+    }
+    
+    return { bookmarks: filteredBookmarks, folders: filteredFolders };
   };
   
   // Function to get all subcollection IDs recursively
@@ -397,8 +416,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   };
 
   // Get filtered bookmarks and folders
-  const filteredBookmarks = getFilteredBookmarks();
-  const filteredFolders = getFilteredFolders();
+  const { bookmarks: filteredBookmarks, folders: filteredFolders } = getFilteredItems();
   
   // Combine and sort all items (folders first, then bookmarks)
   const allItems = [

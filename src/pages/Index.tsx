@@ -121,7 +121,15 @@ const Index = () => {
 
   // Handle tag selection
   const handleTagSelect = (tag: string) => {
-    setSelectedTags([...selectedTags, tag]);
+    setSelectedTags(prev => {
+      // Only add if not already there
+      if (!prev.includes(tag)) {
+        return [...prev, tag];
+      }
+      return prev;
+    });
+    // Close the filter sheet after tag selection for better UX
+    setIsFilterOpen(false);
   };
 
   // Handle tag deselection
@@ -268,7 +276,7 @@ const Index = () => {
                   </Button>
 
                   {/* Tag Filter Sheet */}
-                  <Sheet>
+                  <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                     <SheetTrigger asChild>
                       <Button 
                         variant={selectedTags.length > 0 ? "default" : "outline"}
@@ -371,6 +379,8 @@ const Index = () => {
                   cardSize={cardSize}
                   currentFolderId={currentFolderId}
                   selectedCollectionId={selectedCollectionId}
+                  selectedTags={selectedTags}
+                  searchQuery={searchQuery}
                 />
               ) : (
                 <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-8 rounded-lg shadow text-center mx-2`}>
