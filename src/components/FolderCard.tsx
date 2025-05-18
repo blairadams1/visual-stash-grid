@@ -55,8 +55,21 @@ const FolderCard: React.FC<FolderCardProps> = ({
     }
   };
   
+  // Determine styles based on card size
+  const isSmallCard = cardSize === 'small';
+  const isMediumCard = cardSize === 'medium';
   const isLargeCard = cardSize === 'large';
-  const folderNamePadding = isLargeCard ? 'left-[16%]' : 'left-[12%]';
+
+  // Improved positioning for folder name and content
+  const getFolderNameClass = () => {
+    if (isLargeCard) {
+      return 'top-6 text-base';
+    } else if (isMediumCard) {
+      return 'top-4 text-sm';
+    } else {
+      return 'top-2 text-xs';
+    }
+  };
 
   return (
     <Card 
@@ -66,28 +79,28 @@ const FolderCard: React.FC<FolderCardProps> = ({
     >
       <CardContent className="p-0 h-full flex flex-col relative">
         {/* Container for the folder image with consistent aspect ratio */}
-        <div className="w-full h-full relative">
-          <AspectRatio ratio={3/2} className="large-card-height">
+        <AspectRatio ratio={3/2} className="bg-gradient-to-b from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 w-full h-full">
+          <div className="absolute inset-0 flex items-center justify-center">
             <img
               src="/lovable-uploads/ee3d1214-9131-4ec4-9312-ddc55b3b8d6f.png"
               alt={folder.name}
-              className="w-full h-[70%] object-contain mt-2" // Scaled down to better fit inside the card
+              className="w-[85%] h-[85%] object-contain" // Increased size for better visibility
             />
-          </AspectRatio>
+          </div>
           
-          {/* Folder name at top with increased left padding */}
-          <div className={`absolute ${folderNamePadding} top-[6%] z-10`}>
-            <span className="text-sm font-medium truncate text-amber-800 dark:text-amber-200">
+          {/* Folder name at top with better positioning */}
+          <div className={`absolute left-0 right-0 px-4 ${getFolderNameClass()} z-10 text-center`}>
+            <span className="font-medium truncate text-amber-800 dark:text-amber-200 bg-amber-50/70 dark:bg-amber-900/70 px-2 py-1 rounded">
               {folder.name}
             </span>
           </div>
           
-          {/* Action buttons - rearranged with trash first, then edit */}
-          <div className="absolute bottom-[3%] right-[6%] z-10 flex space-x-3">
+          {/* Action buttons - positioned at bottom right */}
+          <div className="absolute bottom-2 right-2 z-10 flex space-x-2">
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+              className="h-7 w-7 p-0 bg-white/80 dark:bg-gray-800/80 text-red-500 hover:text-red-700 rounded-full"
               onClick={(e) => {
                 e.stopPropagation();
                 if (confirm("Are you sure you want to delete this folder?")) {
@@ -103,7 +116,7 @@ const FolderCard: React.FC<FolderCardProps> = ({
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-6 w-6 p-0"
+                  className="h-7 w-7 p-0 bg-white/80 dark:bg-gray-800/80 rounded-full"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Edit className="h-4 w-4" />
@@ -125,19 +138,19 @@ const FolderCard: React.FC<FolderCardProps> = ({
               </DialogContent>
             </Dialog>
           </div>
-        </div>
+        </AspectRatio>
       </CardContent>
       
-      {/* Tags positioned at bottom left with more padding */}
+      {/* Tags positioned at bottom left with better visibility */}
       {folder.tags && folder.tags.length > 0 && (
-        <div className="absolute bottom-[2%] left-[12%] right-[6%] z-10">
+        <div className="absolute bottom-2 left-0 right-12 z-10 px-2">
           <div className="flex items-center gap-1 flex-wrap">
-            <Tag className="h-3 w-3 text-gray-500" />
-            {folder.tags.map((tag) => (
+            <Tag className="h-3 w-3 text-gray-600 dark:text-gray-300" />
+            {folder.tags.slice(0, isSmallCard ? 2 : isLargeCard ? 6 : 4).map((tag) => (
               <Badge
                 key={tag}
                 variant="secondary"
-                className="text-xs cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700"
+                className={`${isSmallCard ? 'text-[10px]' : 'text-xs'} cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 bg-white/80 dark:bg-gray-800/80`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onTagClick(tag);
@@ -146,6 +159,11 @@ const FolderCard: React.FC<FolderCardProps> = ({
                 {tag}
               </Badge>
             ))}
+            {folder.tags.length > (isSmallCard ? 2 : isLargeCard ? 6 : 4) && (
+              <span className={`${isSmallCard ? 'text-[10px]' : 'text-xs'} text-gray-600 dark:text-gray-300`}>
+                +{folder.tags.length - (isSmallCard ? 2 : isLargeCard ? 6 : 4)}
+              </span>
+            )}
           </div>
         </div>
       )}

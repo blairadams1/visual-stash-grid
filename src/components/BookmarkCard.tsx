@@ -132,9 +132,32 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
     };
 
     // Different styles based on card size
+    const isSmallCard = cardSize === 'small';
+    const isMediumCard = cardSize === 'medium';
     const isLargeCard = cardSize === 'large';
-    const contentPositionClass = isLargeCard ? 'bottom-6 left-0 right-0 px-6' : 'bottom-0 left-0 right-0 p-3';
-    const titleClass = isLargeCard ? 'text-base font-medium mb-3' : 'text-sm font-medium line-clamp-1 mb-2';
+
+    // Improved positioning classes for different card sizes
+    const getContentClasses = () => {
+      if (isLargeCard) {
+        return 'bottom-0 left-0 right-0 px-4 py-5 pb-6';
+      } else if (isMediumCard) {
+        return 'bottom-0 left-0 right-0 p-3 pb-3';
+      } else {
+        return 'bottom-0 left-0 right-0 p-2 pb-2';
+      }
+    };
+
+    const titleClass = isLargeCard 
+      ? 'text-base font-medium mb-2' 
+      : isSmallCard 
+        ? 'text-xs font-medium mb-1 line-clamp-1' 
+        : 'text-sm font-medium mb-1 line-clamp-1';
+
+    // Determine how many tags to show based on card size
+    const visibleTags = isLargeCard ? 8 : isMediumCard ? 4 : 2;
+
+    // Updated gradient overlay - taller to ensure text is readable
+    const gradientOverlayClass = "absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent";
 
     return (
       <>
@@ -152,8 +175,8 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
                 className="w-full h-full object-cover"
               />
               
-              {/* Gradient overlay */}
-              <div className="absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-t from-black/80 to-transparent">
+              {/* Improved gradient overlay */}
+              <div className={gradientOverlayClass}>
                 <a
                   href={bookmark.url}
                   target="_blank"
@@ -166,24 +189,24 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity bg-bookmark-blue/20 text-white hover:bg-bookmark-blue/40 p-1.5 h-8 w-8 backdrop-blur-sm"
+                className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-bookmark-blue/20 text-white hover:bg-bookmark-blue/40 p-1.5 h-8 w-8 backdrop-blur-sm"
                 onClick={handleSettingsClick}
               >
                 <Settings className="h-4 w-4" />
               </Button>
 
-              {/* Content overlay - positioned differently based on card size */}
-              <div className={`absolute ${contentPositionClass} text-white`}>
+              {/* Content overlay - improved positioning based on card size */}
+              <div className={`absolute ${getContentClasses()} text-white z-10`}>
                 <h3 className={titleClass}>
                   {bookmark.title}
                 </h3>
                 <div className="flex flex-wrap gap-1">
-                  {bookmark.tags.slice(0, 5).map((tag) => (
+                  {bookmark.tags.slice(0, visibleTags).map((tag) => (
                     <Button
                       key={tag}
                       variant="outline"
                       size="sm"
-                      className="h-6 px-2 text-xs bg-black/20 hover:bg-bookmark-blue text-white border-white/20 hover:text-white hover:border-transparent"
+                      className={`h-6 px-2 ${isSmallCard ? 'text-[10px]' : 'text-xs'} bg-black/20 hover:bg-bookmark-blue text-white border-white/20 hover:text-white hover:border-transparent`}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -193,15 +216,15 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
                       {tag}
                     </Button>
                   ))}
-                  {bookmark.tags.length > 5 && (
-                    <span className="text-xs text-gray-300 flex items-center">
-                      +{bookmark.tags.length - 5}
+                  {bookmark.tags.length > visibleTags && (
+                    <span className={`${isSmallCard ? 'text-[10px]' : 'text-xs'} text-gray-300 flex items-center`}>
+                      +{bookmark.tags.length - visibleTags}
                     </span>
                   )}
                 </div>
                 
                 {/* Notes indicator if present */}
-                {bookmark.notes && (
+                {bookmark.notes && isLargeCard && (
                   <div className="mt-2 text-xs text-gray-300">
                     <span className="bg-white/20 px-1 py-0.5 rounded">Note</span>
                   </div>
@@ -214,7 +237,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
           <Button
             variant="destructive"
             size="sm"
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
