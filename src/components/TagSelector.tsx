@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { Bookmark } from "@/lib/bookmarkUtils";
 
 interface TagSelectorProps {
   availableTags: string[];
@@ -21,15 +23,25 @@ const TagSelector: React.FC<TagSelectorProps> = ({
   onClearAllTags,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-
+  // Get bookmarks to calculate popular tags
+  const [bookmarks] = useLocalStorage<Bookmark[]>("bookmarks", []);
+  
   const filteredTags = availableTags.filter((tag) =>
     tag.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  // Get top 15 popular tags from available tags
-  const popularTags = [...availableTags]
+  // Calculate popular tags based on frequency in bookmarks
+  const popularTags = Array.from(
+    new Set(bookmarks.flatMap((bookmark) => bookmark.tags))
+  )
+    .sort((a, b) => {
+      // Count occurrences of each tag
+      const countA = bookmarks.filter(bm => bm.tags.includes(a)).length;
+      const countB = bookmarks.filter(bm => bm.tags.includes(b)).length;
+      return countB - countA; // Sort by frequency, descending
+    })
     .filter(tag => !selectedTags.includes(tag))
-    .slice(0, 15);
+    .slice(0, 15); // Get top 15
 
   return (
     <div className="space-y-3">

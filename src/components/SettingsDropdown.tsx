@@ -27,6 +27,7 @@ interface SettingsDropdownProps {
 const SettingsDropdown = ({ bookmarks }: SettingsDropdownProps) => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [bookmarkletDialogOpen, setBookmarkletDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const { toast } = useToast();
 
@@ -132,11 +133,9 @@ const SettingsDropdown = ({ bookmarks }: SettingsDropdownProps) => {
             Export Bookmarks
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <div className="w-full cursor-pointer">
-              <BookmarkPlus className="mr-2 h-4 w-4 inline-block" />
-              <span className="inline-block">Install Bookmarklet</span>
-            </div>
+          <DropdownMenuItem onClick={() => setBookmarkletDialogOpen(true)}>
+            <BookmarkPlus className="mr-2 h-4 w-4" />
+            Install Bookmarklet
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -207,6 +206,13 @@ const SettingsDropdown = ({ bookmarks }: SettingsDropdownProps) => {
               Export
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bookmarklet Dialog */}
+      <Dialog open={bookmarkletDialogOpen} onOpenChange={setBookmarkletDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <BookmarkletInstall />
         </DialogContent>
       </Dialog>
     </>

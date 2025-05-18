@@ -31,7 +31,10 @@ const BookmarkletInstall = () => {
 
   return (
     <>
-      <div onClick={() => setShowDialog(true)} className="w-full">
+      <div 
+        onClick={() => setShowDialog(true)} 
+        className="w-full cursor-pointer"
+      >
         Install TagMarked
       </div>
       
