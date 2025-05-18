@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Palette, Layout, Moon, Sun, FileText } from 'lucide-react';
+import { Settings, Palette, FileText, Moon, Sun } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
   DropdownMenu,
@@ -29,20 +29,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SettingsDropdownProps {
   bookmarks: any[];
-  onChangeLayout: (layout: 'grid' | 'list' | 'compact') => void;
   onChangeTheme: (theme: 'light' | 'dark') => void;
   onChangeCardSize: (size: 'small' | 'medium' | 'large') => void;
-  currentLayout: 'grid' | 'list' | 'compact';
   currentTheme: 'light' | 'dark';
   currentCardSize: 'small' | 'medium' | 'large';
 }
 
 const SettingsDropdown = ({ 
   bookmarks, 
-  onChangeLayout, 
   onChangeTheme, 
   onChangeCardSize,
-  currentLayout,
   currentTheme,
   currentCardSize 
 }: SettingsDropdownProps) => {
@@ -393,20 +389,6 @@ const SettingsDropdown = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <Layout className="mr-2 h-4 w-4" />
-              <span>Layout Options</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuRadioGroup value={currentLayout} onValueChange={(value) => onChangeLayout(value as 'grid' | 'list' | 'compact')}>
-                <DropdownMenuRadioItem value="grid">Grid</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="list">List</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="compact">Compact</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-          
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <Palette className="mr-2 h-4 w-4" />
