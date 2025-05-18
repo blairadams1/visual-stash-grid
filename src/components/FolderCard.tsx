@@ -48,19 +48,19 @@ const FolderCard: React.FC<FolderCardProps> = ({
             <img
               src="/lovable-uploads/ee3d1214-9131-4ec4-9312-ddc55b3b8d6f.png"
               alt={folder.name}
-              className="w-full h-full object-cover"
+              className="w-full h-[85%] object-contain mt-2" // Scaled down to fit inside the card
             />
           </AspectRatio>
           
-          {/* Folder name at top - adjusted position */}
+          {/* Folder name at top - adjusted position up by 12% */}
           <div className="absolute left-[6%] top-[6%] z-10">
             <span className="text-sm font-medium truncate text-amber-800 dark:text-amber-200">
               {folder.name}
             </span>
           </div>
           
-          {/* Edit buttons positioned higher up - moved up more */}
-          <div className="absolute bottom-[25%] right-[6%] z-10 flex space-x-3">
+          {/* Edit buttons - moved closer to the bottom (from 25% to 10% from bottom) */}
+          <div className="absolute bottom-[10%] right-[6%] z-10 flex space-x-3">
             <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
               <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogTrigger asChild>
@@ -99,9 +99,9 @@ const FolderCard: React.FC<FolderCardProps> = ({
         </div>
       </CardContent>
       
-      {/* Tags moved inside the aspect ratio container to avoid whitespace at bottom */}
+      {/* Tags moved inside the aspect ratio container and positioned closer to bottom */}
       {folder.tags && folder.tags.length > 0 && (
-        <div className="absolute bottom-[5%] left-[6%] right-[6%] z-10">
+        <div className="absolute bottom-[2%] left-[6%] right-[6%] z-10">
           <div className="flex items-center gap-1 flex-wrap">
             <Tag className="h-3 w-3 text-gray-500" />
             {folder.tags.map((tag) => (

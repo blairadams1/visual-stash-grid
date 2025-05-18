@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Settings, Download, Upload, Sun, Moon, Tag, Monitor, Grid2X2, Grid3X3, LayoutGrid, Bookmark, FolderTree } from 'lucide-react';
+import { Settings, Download, Upload, Sun, Moon, Tag, Grid2X2, Grid3X3, LayoutGrid, FolderTree } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,11 +8,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Bookmark as BookmarkType } from '@/lib/bookmarkUtils';
@@ -148,56 +144,60 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
           <DropdownMenuSeparator />
           
           <DropdownMenuGroup>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
+            {/* Theme buttons - directly in main menu */}
+            <DropdownMenuLabel className="px-2 pt-2 text-xs font-normal text-muted-foreground">Theme</DropdownMenuLabel>
+            <div className="flex items-center justify-between px-2 pb-2">
+              <Button 
+                variant={currentTheme === 'light' ? 'default' : 'outline'} 
+                size="sm"
+                className="w-[48%]"
+                onClick={() => onChangeTheme('light')}
+              >
                 <Sun className="mr-2 h-4 w-4" />
-                <span>Theme</span>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => onChangeTheme('light')}>
-                    <Sun className="mr-2 h-4 w-4" />
-                    <span>Light</span>
-                    {currentTheme === 'light' && <span className="ml-auto">✓</span>}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onChangeTheme('dark')}>
-                    <Moon className="mr-2 h-4 w-4" />
-                    <span>Dark</span>
-                    {currentTheme === 'dark' && <span className="ml-auto">✓</span>}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onChangeTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')}>
-                    <Monitor className="mr-2 h-4 w-4" />
-                    <span>System</span>
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
+                Light
+              </Button>
+              <Button 
+                variant={currentTheme === 'dark' ? 'default' : 'outline'} 
+                size="sm"
+                className="w-[48%]"
+                onClick={() => onChangeTheme('dark')}
+              >
+                <Moon className="mr-2 h-4 w-4" />
+                Dark
+              </Button>
+            </div>
             
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <LayoutGrid className="mr-2 h-4 w-4" />
-                <span>Card Size</span>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => onChangeCardSize('small')}>
-                    <Grid3X3 className="mr-2 h-4 w-4" />
-                    <span>Small</span>
-                    {currentCardSize === 'small' && <span className="ml-auto">✓</span>}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onChangeCardSize('medium')}>
-                    <Grid2X2 className="mr-2 h-4 w-4" />
-                    <span>Medium</span>
-                    {currentCardSize === 'medium' && <span className="ml-auto">✓</span>}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onChangeCardSize('large')}>
-                    <Bookmark className="mr-2 h-4 w-4" />
-                    <span>Large</span>
-                    {currentCardSize === 'large' && <span className="ml-auto">✓</span>}
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
+            {/* Card size buttons - directly in main menu */}
+            <DropdownMenuLabel className="px-2 pt-2 text-xs font-normal text-muted-foreground">Card Size</DropdownMenuLabel>
+            <div className="flex items-center justify-between px-2 pb-2">
+              <Button 
+                variant={currentCardSize === 'small' ? 'default' : 'outline'} 
+                size="sm"
+                className="w-[31%]"
+                onClick={() => onChangeCardSize('small')}
+              >
+                <Grid3X3 className="mr-1 h-3 w-3" />
+                S
+              </Button>
+              <Button 
+                variant={currentCardSize === 'medium' ? 'default' : 'outline'}
+                size="sm"
+                className="w-[31%]"
+                onClick={() => onChangeCardSize('medium')}
+              >
+                <Grid2X2 className="mr-1 h-3 w-3" />
+                M
+              </Button>
+              <Button 
+                variant={currentCardSize === 'large' ? 'default' : 'outline'}
+                size="sm"
+                className="w-[31%]"
+                onClick={() => onChangeCardSize('large')}
+              >
+                <LayoutGrid className="mr-1 h-3 w-3" />
+                L
+              </Button>
+            </div>
             
             <DropdownMenuItem onClick={onToggleSidebar}>
               <FolderTree className="mr-2 h-4 w-4" />
