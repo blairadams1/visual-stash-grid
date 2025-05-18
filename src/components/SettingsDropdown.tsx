@@ -16,6 +16,7 @@ import ThemeSelector from './settings/ThemeSelector';
 import CardSizeSelector from './settings/CardSizeSelector';
 import ImportExportDialog from './settings/ImportExportDialog';
 import TagManagerDialog from './settings/TagManagerDialog';
+import BookmarkletInstall from './BookmarkletInstall';
 
 interface SettingsDropdownProps {
   bookmarks: Bookmark[];
@@ -74,6 +75,11 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
               isOpen={isTagManagerOpen} 
               onOpenChange={setIsTagManagerOpen} 
             />
+
+            {/* Bookmarklet install dialog */}
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              <BookmarkletInstall />
+            </DropdownMenuItem>
           </DropdownMenuGroup>
           
           <DropdownMenuSeparator />
@@ -90,4 +96,3 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
 };
 
 export default SettingsDropdown;
-
