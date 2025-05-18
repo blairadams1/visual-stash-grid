@@ -23,7 +23,6 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  const [newTag, setNewTag] = useState("");
   const [bookmarks] = useLocalStorage<Bookmark[]>("bookmarks", []);
 
   // Get all unique tags from bookmarks
@@ -58,16 +57,6 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
       .slice(0, 15) // Get top 15 popular tags
       .map(([tag]) => tag);
   }, [bookmarks, selectedTags]);
-
-  // Handle adding a custom tag
-  const handleAddTag = () => {
-    if (!newTag.trim() || selectedTags.includes(newTag.trim())) {
-      return;
-    }
-    
-    onTagSelect(newTag.trim());
-    setNewTag("");
-  };
 
   return (
     <div className="space-y-4">
@@ -110,26 +99,6 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-8"
         />
-      </div>
-
-      {/* Add custom tag */}
-      <div className="flex items-center space-x-2">
-        <Input
-          placeholder="Add custom tag..."
-          value={newTag}
-          onChange={(e) => setNewTag(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              handleAddTag();
-            }
-          }}
-        />
-        <Button 
-          onClick={handleAddTag} 
-          disabled={!newTag.trim() || selectedTags.includes(newTag.trim())}
-        >
-          Add
-        </Button>
       </div>
 
       {/* Tags tabs */}
