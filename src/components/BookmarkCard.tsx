@@ -32,8 +32,8 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
             className="w-full h-full object-cover"
           />
           
-          {/* Gradient overlay - only at the bottom */}
-          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/80 to-transparent">
+          {/* Gradient overlay - moved down 20% as requested */}
+          <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/80 to-transparent">
             <a
               href={bookmark.url}
               target="_blank"

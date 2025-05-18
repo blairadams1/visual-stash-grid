@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { Settings, Download, Upload, BookmarkPlus } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import BookmarkletInstall from '@/components/BookmarkletInstall';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,8 +26,6 @@ interface SettingsDropdownProps {
 const SettingsDropdown = ({ bookmarks }: SettingsDropdownProps) => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [bookmarkletDialogOpen, setBookmarkletDialogOpen] = useState(false);
-  const [importFile, setImportFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   const handleExportBookmarks = () => {
@@ -115,6 +112,40 @@ const SettingsDropdown = ({ bookmarks }: SettingsDropdownProps) => {
     reader.readAsText(importFile);
   };
 
+  // Create bookmarklet code with improved behavior
+  const createBookmarklet = () => {
+    const bookmarkletCode = `javascript:(function(){
+      const popup = window.open('${window.location.origin}/extension?url='+encodeURIComponent(window.location.href)+'&title='+encodeURIComponent(document.title),'TagMarked','width=400,height=500,resizable=yes');
+      if(!popup) alert('Please allow popups for TagMarked to work properly.');
+    })();`;
+    
+    // Create a new bookmark
+    const temporaryLink = document.createElement('a');
+    temporaryLink.href = bookmarkletCode;
+    temporaryLink.textContent = '📚 TagMarked';
+    
+    // Notify user to drag it to bookmarks
+    toast({
+      title: "Install TagMarked Bookmarklet",
+      description: "Drag the bookmarklet to your browser's bookmark bar",
+      action: (
+        <div className="mt-2">
+          <a 
+            href={bookmarkletCode}
+            className="px-4 py-2 bg-bookmark-blue text-white rounded-md no-underline font-medium"
+            onClick={(e) => e.preventDefault()}
+            draggable="true"
+          >
+            📚 TagMarked
+          </a>
+        </div>
+      ),
+      duration: 10000,
+    });
+  };
+
+  const [importFile, setImportFile] = useState<File | null>(null);
+
   return (
     <>
       <DropdownMenu>
@@ -133,7 +164,7 @@ const SettingsDropdown = ({ bookmarks }: SettingsDropdownProps) => {
             Export Bookmarks
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setBookmarkletDialogOpen(true)}>
+          <DropdownMenuItem onClick={createBookmarklet}>
             <BookmarkPlus className="mr-2 h-4 w-4" />
             Install Bookmarklet
           </DropdownMenuItem>
@@ -206,13 +237,6 @@ const SettingsDropdown = ({ bookmarks }: SettingsDropdownProps) => {
               Export
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Bookmarklet Dialog */}
-      <Dialog open={bookmarkletDialogOpen} onOpenChange={setBookmarkletDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <BookmarkletInstall />
         </DialogContent>
       </Dialog>
     </>

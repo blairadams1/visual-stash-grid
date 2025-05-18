@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useTags } from "@/hooks/useTags";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { Bookmark } from "@/lib/bookmarkUtils";
 import { 
   Dialog,
   DialogContent,
@@ -50,6 +52,8 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
   const [newCategoryColor, setNewCategoryColor] = useState("#9b87f5");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
   const { toast } = useToast();
+  // Get bookmarks to calculate popular tags
+  const [bookmarks] = useLocalStorage<Bookmark[]>("bookmarks", []);
 
   // Get unique tag names from all tags (for backward compatibility)
   const allTagNames = useMemo(() => {
@@ -61,12 +65,32 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
     // Then, add any other tags that might be referenced only by name
     selectedTags.forEach(tag => tagNames.add(tag));
     
+    // Also add tags from bookmarks
+    bookmarks.forEach(bookmark => {
+      bookmark.tags.forEach(tag => tagNames.add(tag));
+    });
+    
     return Array.from(tagNames).sort();
-  }, [tags, selectedTags]);
+  }, [tags, selectedTags, bookmarks]);
 
   const filteredTags = allTagNames.filter((tag) =>
     tag.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+  // Calculate popular tags based on frequency in bookmarks
+  const popularTags = useMemo(() => {
+    return Array.from(
+      new Set(bookmarks.flatMap((bookmark) => bookmark.tags))
+    )
+      .sort((a, b) => {
+        // Count occurrences of each tag
+        const countA = bookmarks.filter(bm => bm.tags.includes(a)).length;
+        const countB = bookmarks.filter(bm => bm.tags.includes(b)).length;
+        return countB - countA; // Sort by frequency, descending
+      })
+      .filter(tag => !selectedTags.includes(tag))
+      .slice(0, 15); // Get top 15
+  }, [bookmarks, selectedTags]);
 
   // Handle adding a new tag
   const handleAddTag = () => {
@@ -194,10 +218,30 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
             </div>
           )}
           
+          {/* Popular tags section */}
+          {popularTags.length > 0 && (
+            <div className="mb-4">
+              <h3 className="text-sm font-medium mb-2 text-gray-600">Popular Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {popularTags.map((tag) => (
+                  <Button
+                    key={tag}
+                    variant="outline"
+                    size="sm"
+                    className="bg-gray-50 border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-softBlue hover:text-bookmark-darkBlue"
+                    onClick={() => onTagSelect(tag)}
+                  >
+                    {tag}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+          
           {/* Available tags */}
           <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
             {filteredTags
-              .filter((tag) => !selectedTags.includes(tag))
+              .filter((tag) => !selectedTags.includes(tag) && !popularTags.includes(tag))
               .map((tag) => {
                 // Find the tag object to get its category and color
                 const tagObj = tags.find(t => t.name === tag);
