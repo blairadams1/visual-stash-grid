@@ -21,7 +21,10 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
   onClearAllTags,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { allTags } = useTags();
+  const { tags } = useTags();
+  
+  // Extract tag names from the tags array
+  const allTags = useMemo(() => tags.map(tag => tag.name), [tags]);
 
   // Filter tags based on search term
   const filteredTags = useMemo(() => {
@@ -32,8 +35,8 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between mb-2">
-        {/* Clear all button moved up */}
+      <div className="flex items-center justify-between">
+        {/* Clear all button - moved to top and title removed */}
         <Button
           variant="ghost"
           size="sm"

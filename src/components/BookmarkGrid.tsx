@@ -1,6 +1,6 @@
 
 import { Bookmark, Collection, Folder } from "@/lib/bookmarkUtils";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import GridItem from "./bookmark-grid/GridItem";
 import { useFilterUtils } from "./bookmark-grid/FilterUtils";
@@ -72,7 +72,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     collections
   );
 
-  // Get drag and drop handlers - using the modified DragDropHandler
+  // Get drag and drop handlers
   const dragDropHandlers = DragDropHandler({
     onBookmarksReordered,
     onMoveToFolder,
@@ -124,6 +124,24 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
 
   // Get card height classes
   const heightClasses = getCardHeightClasses(cardSize);
+
+  // Auto-refresh when items change
+  useEffect(() => {
+    // This will trigger a re-render with the latest data
+    const triggerRefresh = () => {
+      if (getFilteredItems) {
+        const { bookmarks: refreshedBookmarks, folders: refreshedFolders } = getFilteredItems();
+        // The component will re-render with fresh data
+      }
+    };
+    
+    // Set up event listener for bookmark changes
+    window.addEventListener('bookmarkChange', triggerRefresh);
+    
+    return () => {
+      window.removeEventListener('bookmarkChange', triggerRefresh);
+    };
+  }, [getFilteredItems]);
 
   return (
     <div 

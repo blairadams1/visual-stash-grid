@@ -105,6 +105,9 @@ const Index = () => {
     );
     // Auto refresh bookmarks
     refreshBookmarks();
+    
+    // Dispatch custom event to trigger grid refresh
+    window.dispatchEvent(new Event('bookmarkChange'));
   };
 
   // Handle adding a new folder

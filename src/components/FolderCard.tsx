@@ -37,7 +37,7 @@ const FolderCard: React.FC<FolderCardProps> = ({
 
   return (
     <Card 
-      className="h-full overflow-hidden transition-shadow hover:shadow-lg relative"
+      className="h-full w-full overflow-hidden transition-shadow hover:shadow-lg relative"
       onDoubleClick={handleDoubleClick}
     >
       <CardContent className="p-0 h-full flex flex-col relative">
@@ -48,8 +48,8 @@ const FolderCard: React.FC<FolderCardProps> = ({
           </span>
         </div>
 
-        {/* Full-width image */}
-        <div className="w-full h-full flex-grow">
+        {/* Full-width image with aspect ratio maintained */}
+        <div className="w-full h-full flex-grow relative">
           <img
             src="/lovable-uploads/ee3d1214-9131-4ec4-9312-ddc55b3b8d6f.png"
             alt={folder.name}

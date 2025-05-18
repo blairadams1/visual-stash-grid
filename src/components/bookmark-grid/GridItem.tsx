@@ -78,7 +78,7 @@ const GridItem: React.FC<GridItemProps> = ({
         isFolderTarget
           ? "ring-2 ring-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)]"
           : ""
-      } ${heightClass}`}
+      } ${heightClass} w-full`}
       data-folder-id={type === 'folder' ? item.id : undefined}
       draggable={!isMobile}
       onDragStart={(e) => handleDragStart(index, e, type)}
