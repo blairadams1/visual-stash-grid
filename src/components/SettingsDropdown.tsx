@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import BookmarkletInstall from './BookmarkletInstall';
 
 interface SettingsDropdownProps {
   bookmarks: any[];
@@ -26,6 +27,7 @@ interface SettingsDropdownProps {
 const SettingsDropdown = ({ bookmarks }: SettingsDropdownProps) => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [bookmarkletDialogOpen, setBookmarkletDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const handleExportBookmarks = () => {
@@ -112,38 +114,6 @@ const SettingsDropdown = ({ bookmarks }: SettingsDropdownProps) => {
     reader.readAsText(importFile);
   };
 
-  // Create bookmarklet code with improved behavior
-  const createBookmarklet = () => {
-    const bookmarkletCode = `javascript:(function(){
-      const popup = window.open('${window.location.origin}/extension?url='+encodeURIComponent(window.location.href)+'&title='+encodeURIComponent(document.title),'TagMarked','width=400,height=500,resizable=yes');
-      if(!popup) alert('Please allow popups for TagMarked to work properly.');
-    })();`;
-    
-    // Create a new bookmark
-    const temporaryLink = document.createElement('a');
-    temporaryLink.href = bookmarkletCode;
-    temporaryLink.textContent = '📚 TagMarked';
-    
-    // Notify user to drag it to bookmarks
-    toast({
-      title: "Install TagMarked Bookmarklet",
-      description: "Drag the bookmarklet to your browser's bookmark bar",
-      action: (
-        <div className="mt-2">
-          <a 
-            href={bookmarkletCode}
-            className="px-4 py-2 bg-bookmark-blue text-white rounded-md no-underline font-medium"
-            onClick={(e) => e.preventDefault()}
-            draggable="true"
-          >
-            📚 TagMarked
-          </a>
-        </div>
-      ),
-      duration: 10000,
-    });
-  };
-
   const [importFile, setImportFile] = useState<File | null>(null);
 
   return (
@@ -164,7 +134,7 @@ const SettingsDropdown = ({ bookmarks }: SettingsDropdownProps) => {
             Export Bookmarks
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={createBookmarklet}>
+          <DropdownMenuItem onClick={() => setBookmarkletDialogOpen(true)}>
             <BookmarkPlus className="mr-2 h-4 w-4" />
             Install Bookmarklet
           </DropdownMenuItem>
@@ -235,6 +205,80 @@ const SettingsDropdown = ({ bookmarks }: SettingsDropdownProps) => {
               onClick={handleExportBookmarks}
             >
               Export
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bookmarklet Dialog */}
+      <Dialog open={bookmarkletDialogOpen} onOpenChange={setBookmarkletDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Install TagMarked</DialogTitle>
+            <DialogDescription>
+              Add TagMarked to your browser for quick bookmarking
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="p-4">
+            <h3 className="font-medium mb-2">Option 1: Drag to bookmarks bar</h3>
+            <p className="text-sm text-gray-500 mb-3">
+              Drag the button below to your bookmarks bar to install the bookmarklet.
+            </p>
+            <div className="flex justify-center mb-6">
+              <a 
+                href={`javascript:(function(){
+                  const popup = window.open('${window.location.origin}/extension?url='+encodeURIComponent(window.location.href)+'&title='+encodeURIComponent(document.title),'TagMarked','width=400,height=500,resizable=yes');
+                  if(!popup) alert('Please allow popups for TagMarked to work properly.');
+                })();`}
+                className="px-4 py-2 bg-bookmark-blue text-white rounded-md no-underline font-medium"
+                onClick={(e) => e.preventDefault()}
+                draggable="true"
+              >
+                📚 TagMarked
+              </a>
+            </div>
+            
+            <h3 className="font-medium mb-2">Option 2: Copy the link</h3>
+            <p className="text-sm text-gray-500 mb-3">
+              Copy this link and create a new bookmark manually.
+            </p>
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                readOnly
+                value={`javascript:(function(){
+                  const popup = window.open('${window.location.origin}/extension?url='+encodeURIComponent(window.location.href)+'&title='+encodeURIComponent(document.title),'TagMarked','width=400,height=500,resizable=yes');
+                  if(!popup) alert('Please allow popups for TagMarked to work properly.');
+                })();`}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+              />
+              <Button
+                className="shrink-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(`javascript:(function(){
+                    const popup = window.open('${window.location.origin}/extension?url='+encodeURIComponent(window.location.href)+'&title='+encodeURIComponent(document.title),'TagMarked','width=400,height=500,resizable=yes');
+                    if(!popup) alert('Please allow popups for TagMarked to work properly.');
+                  })();`);
+                  
+                  toast({
+                    title: "Copied to clipboard",
+                    description: "Bookmarklet code copied successfully",
+                  });
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+          </div>
+          
+          <DialogFooter className="sm:justify-start">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setBookmarkletDialogOpen(false)}
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

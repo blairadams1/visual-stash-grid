@@ -1,11 +1,11 @@
 
 import { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { BookmarkPlus, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Check, Loader2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import TagList from '@/components/extension/TagList';
 import { generateAutoTags } from '@/lib/bookmarkUtils';
-import TagList from './TagList';
 
 interface BookmarkFormProps {
   url: string;
@@ -14,7 +14,6 @@ interface BookmarkFormProps {
   popularTags: string[];
   isLoading: boolean;
   isSuccess: boolean;
-  initialTags?: string[];
 }
 
 const BookmarkForm = ({ 
@@ -23,150 +22,133 @@ const BookmarkForm = ({
   onSave, 
   popularTags, 
   isLoading, 
-  isSuccess,
-  initialTags = [] 
+  isSuccess 
 }: BookmarkFormProps) => {
-  const [currentUrl, setCurrentUrl] = useState(url);
-  const [currentTitle, setCurrentTitle] = useState(title);
-  const [tags, setTags] = useState('');
-  const [autoTags, setAutoTags] = useState<string[]>(initialTags);
-
-  // Generate auto tags based on URL and title
+  const [bookmarkUrl, setBookmarkUrl] = useState(url);
+  const [bookmarkTitle, setBookmarkTitle] = useState(title);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  
+  // Auto-generate tags when URL/title changes
   useEffect(() => {
-    if (currentUrl) {
-      const generatedTags = generateAutoTags(currentUrl, currentTitle || '', 3);
-      setAutoTags(generatedTags.tags);
+    if (url) {
+      const { tags: autoTags } = generateAutoTags(url, title, 3);
+      setTags(autoTags);
     }
-  }, [currentUrl, currentTitle]);
+  }, [url, title]);
 
-  // Update tags input when auto tags change
-  useEffect(() => {
-    if (autoTags.length > 0) {
-      setTags(autoTags.join(', '));
-    }
-  }, [autoTags]);
-
-  // Get tag list as array
-  const getTagsArray = () => {
-    return tags
-      .split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await onSave(bookmarkUrl, bookmarkTitle, tags);
   };
 
-  // Add a tag to the current tags list
-  const addTag = (tag: string) => {
-    const currentTags = getTagsArray();
-    
-    if (!currentTags.includes(tag)) {
-      const newTags = [...currentTags, tag];
-      setTags(newTags.join(', '));
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      const newTag = tagInput.trim().toLowerCase();
+      if (!tags.includes(newTag)) {
+        setTags([...tags, newTag]);
+      }
+      setTagInput('');
     }
   };
 
-  // Remove a tag from the current tags list
-  const removeTag = (tagToRemove: string) => {
-    const currentTags = getTagsArray()
-      .filter(t => t !== tagToRemove);
-    
-    setTags(currentTags.join(', '));
-  };
-
-  // Handle tag click (toggle add/remove)
   const handleTagClick = (tag: string) => {
-    const currentTags = getTagsArray();
-    if (currentTags.includes(tag)) {
-      removeTag(tag);
+    if (tags.includes(tag)) {
+      setTags(tags.filter(t => t !== tag));
     } else {
-      addTag(tag);
+      setTags([...tags, tag]);
     }
   };
 
-  const handleSubmit = async () => {
-    if (!currentUrl) return false;
-    const tagsList = getTagsArray();
-    return await onSave(currentUrl, currentTitle, tagsList);
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
   return (
-    <div className="space-y-3">
-      <div>
-        <label className="block text-sm font-medium mb-1">Page Title</label>
-        <Input 
-          type="text" 
-          value={currentTitle} 
-          onChange={(e) => setCurrentTitle(e.target.value)} 
-          placeholder="Page Title"
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="title">Title</Label>
+        <Input
+          id="title"
+          placeholder="Page title"
+          value={bookmarkTitle}
+          onChange={(e) => setBookmarkTitle(e.target.value)}
+          required
+          className="bg-white border-gray-200 focus:border-bookmark-blue focus:ring-bookmark-blue/20"
         />
       </div>
       
-      <div>
-        <label className="block text-sm font-medium mb-1">URL</label>
-        <Input 
-          type="text" 
-          value={currentUrl} 
-          onChange={(e) => setCurrentUrl(e.target.value)} 
-          placeholder="https://"
+      <div className="space-y-2">
+        <Label htmlFor="url">URL</Label>
+        <Input
+          id="url"
+          placeholder="https://example.com"
+          value={bookmarkUrl}
+          onChange={(e) => setBookmarkUrl(e.target.value)}
+          required
+          className="bg-white border-gray-200 focus:border-bookmark-blue focus:ring-bookmark-blue/20"
         />
       </div>
       
-      <div>
-        <label className="flex items-center justify-between text-sm font-medium mb-1">
-          <span>Tags</span>
-          {autoTags.length > 0 && (
-            <span className="text-xs text-gray-500">Auto-tagged</span>
-          )}
-        </label>
-        <Input 
-          type="text" 
-          value={tags} 
-          onChange={(e) => setTags(e.target.value)} 
-          placeholder="design, inspiration, reference"
-        />
+      <div className="space-y-2">
+        <Label htmlFor="tags">Tags</Label>
+        <div className="flex flex-wrap gap-1 mb-2">
+          {tags.map(tag => (
+            <Button 
+              key={tag} 
+              type="button"
+              variant="outline"
+              size="sm"
+              className="bg-bookmark-blue/10 hover:bg-bookmark-blue/20 text-bookmark-blue border-none"
+              onClick={() => handleRemoveTag(tag)}
+            >
+              {tag} <span className="ml-1">×</span>
+            </Button>
+          ))}
+        </div>
         
-        {/* Display current tags */}
-        {tags && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {getTagsArray().map(tag => (
-              <Badge 
-                key={tag} 
-                className="bg-bookmark-blue text-white"
-                onClick={() => removeTag(tag)}
-              >
-                {tag} ×
-              </Badge>
-            ))}
-          </div>
-        )}
+        <Input
+          id="tags"
+          placeholder="Add tags (press Enter)"
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={handleAddTag}
+          className="bg-white border-gray-200 focus:border-bookmark-blue focus:ring-bookmark-blue/20"
+        />
       </div>
-
-      {/* Popular Tags Section */}
+      
+      {/* Show popular tags */}
       {popularTags.length > 0 && (
         <TagList 
-          tags={popularTags}
-          currentTags={getTagsArray()}
+          tags={popularTags} 
+          currentTags={tags} 
           onTagClick={handleTagClick}
         />
       )}
       
-      <Button 
-        onClick={handleSubmit}
-        disabled={isLoading}
-        className={`w-full ${isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-bookmark-purple hover:bg-bookmark-darkPurple'}`}
-      >
-        {isLoading ? 'Saving...' : isSuccess ? (
-          <span className="flex items-center">
-            <Check className="h-5 w-5 mr-1" />
-            Saved!
-          </span>
-        ) : (
-          <span className="flex items-center">
-            <BookmarkPlus className="h-5 w-5 mr-1" />
-            Add Bookmark
-          </span>
-        )}
-      </Button>
-    </div>
+      <div className="pt-2">
+        <Button 
+          type="submit" 
+          className="w-full bg-bookmark-blue hover:bg-bookmark-darkBlue transition-colors"
+          disabled={isLoading || isSuccess}
+        >
+          {isLoading ? (
+            <span className="flex items-center">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+              Saving...
+            </span>
+          ) : isSuccess ? (
+            <span className="flex items-center">
+              <Check className="mr-2 h-4 w-4" /> 
+              Saved!
+            </span>
+          ) : (
+            'Save Bookmark'
+          )}
+        </Button>
+      </div>
+    </form>
   );
 };
 
