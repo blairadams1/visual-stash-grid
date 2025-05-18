@@ -146,7 +146,7 @@ export const parseHTMLBookmarks = (html: string) => {
     });
   }
   
-  return { bookmarks: importedBookmarks, folders: importedFolders };
+  return { bookmarks: importedBookmarks, folders: importedFolders, error: null };
 };
 
 // Process imported JSON bookmarks
