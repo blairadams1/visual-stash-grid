@@ -79,18 +79,18 @@ const FolderCard: React.FC<FolderCardProps> = ({
         </Button>
       </div>
 
-      <CardContent className="p-0 h-full flex flex-col">
-        <div className="aspect-video overflow-hidden flex-grow flex items-center justify-center">
+      <CardContent className="p-0 h-full flex flex-col relative">
+        <div className="w-full h-full">
           <img
             src={folder.image}
             alt={folder.name}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover"
           />
         </div>
-        <div className="p-2 pb-1 pt-1 bg-amber-100/70 dark:bg-amber-900/70 absolute bottom-0 left-0 w-full">
-          <div className="flex items-center">
-            <Folder className="h-4 w-4 text-amber-600 mr-1" />
+        <div className="p-2 pb-1 pt-1 bg-amber-100/80 dark:bg-amber-900/80 absolute bottom-6 right-0 max-w-[80%] rounded-l-md">
+          <div className="flex items-center justify-end">
             <span className="text-sm font-medium truncate">{folder.name}</span>
+            <Folder className="h-4 w-4 text-amber-600 ml-1" />
           </div>
         </div>
       </CardContent>

@@ -302,10 +302,13 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
             (draggedIndex === index && draggedType === type) ? "opacity-50 scale-105 z-10" : "opacity-100"
           } ${
             (targetIndex === index && draggedIndex !== index) || (type === 'folder' && draggedOverFolder === item.id)
-              ? "border-2 border-bookmark-blue ring-2 ring-bookmark-blue/30 rounded-lg shadow-lg"
+              ? "border-2 border-blue-500 ring-2 ring-blue-400/50 shadow-lg"
               : ""
           }`}
         >
+          {index === targetIndex && draggedIndex !== null && draggedIndex !== index && (
+            <div className="absolute inset-0 border-4 border-blue-500 rounded-lg z-0 bg-blue-100/20 backdrop-blur-sm pointer-events-none"></div>
+          )}
           {type === 'bookmark' ? (
             <BookmarkCard
               bookmark={item as Bookmark}
@@ -321,6 +324,9 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
               onUpdate={onUpdateFolder}
               onDoubleClick={onOpenFolder}
             />
+          )}
+          {index === targetIndex && draggedIndex !== null && draggedIndex !== index && (
+            <div className="absolute left-0 top-0 w-full h-1 bg-blue-500 shadow-md z-20"></div>
           )}
         </div>
       ))}
