@@ -38,7 +38,7 @@ const FolderCard: React.FC<FolderCardProps> = ({
 
   return (
     <Card 
-      className="h-full w-full overflow-hidden transition-shadow hover:shadow-lg relative"
+      className="overflow-hidden transition-shadow hover:shadow-lg relative h-full"
       onDoubleClick={handleDoubleClick}
     >
       <CardContent className="p-0 h-full flex flex-col relative">
@@ -52,15 +52,15 @@ const FolderCard: React.FC<FolderCardProps> = ({
             />
           </AspectRatio>
           
-          {/* Folder name at top left */}
-          <div className="absolute left-[6%] top-[8%] z-10">
+          {/* Folder name at top - adjusted position */}
+          <div className="absolute left-[6%] top-[6%] z-10">
             <span className="text-sm font-medium truncate text-amber-800 dark:text-amber-200">
               {folder.name}
             </span>
           </div>
           
-          {/* Edit buttons positioned at bottom right */}
-          <div className="absolute bottom-[8%] right-[6%] z-10 flex space-x-3">
+          {/* Edit buttons positioned higher up */}
+          <div className="absolute bottom-[12%] right-[6%] z-10 flex space-x-3">
             <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
               <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogTrigger asChild>
@@ -100,7 +100,7 @@ const FolderCard: React.FC<FolderCardProps> = ({
       </CardContent>
       
       {folder.tags && folder.tags.length > 0 && (
-        <CardFooter className="p-2 pt-0 flex flex-wrap gap-1 mt-auto">
+        <CardFooter className="p-2 pt-0 pb-1 flex flex-wrap gap-1">
           <div className="flex items-center gap-1 w-full">
             <Tag className="h-3 w-3 text-gray-500" />
             {folder.tags.map((tag) => (
