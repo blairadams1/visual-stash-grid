@@ -16,13 +16,13 @@ export function useFolders() {
   }, []);
   
   // Add a new folder
-  const addFolder = useCallback((name: string, image?: string, tags: string[] = []) => {
+  const addFolder = useCallback((name: string, image?: string, tags: string[] = [], parentId?: string) => {
     // Validate tags
     const validatedTags = tags
       .filter(tag => tag.trim().length > 0 && tag.trim().length <= 15 && !tag.includes('.'))
       .filter((tag, index, self) => self.indexOf(tag) === index); // Remove duplicates
       
-    const newFolder = createFolder(name, image, validatedTags, folders);
+    const newFolder = createFolder(name, image, validatedTags, folders, parentId);
     setFolders([...folders, newFolder]);
     return newFolder;
   }, [folders, setFolders]);

@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 
 // Types
@@ -33,6 +32,7 @@ export interface Folder {
   order: number;
   dateAdded: string;
   collectionId?: string;
+  parentId?: string; // Added parentId property for folder hierarchy
 }
 
 export interface Tag {
@@ -114,7 +114,8 @@ export const createFolder = (
   name: string,
   image: string = '/lovable-uploads/80ac03c8-9e22-4604-a202-1c5c73c568eb.png',
   tags: string[] = [],
-  existingItems: Array<Bookmark | Folder> = []
+  existingItems: Array<Bookmark | Folder> = [],
+  parentId?: string
 ): Folder => {
   // Validate tags
   const validatedTags = tags
@@ -134,7 +135,8 @@ export const createFolder = (
     image,
     tags: validatedTags,
     order: highestOrder + 1,
-    dateAdded: new Date().toISOString()
+    dateAdded: new Date().toISOString(),
+    parentId
   };
 };
 

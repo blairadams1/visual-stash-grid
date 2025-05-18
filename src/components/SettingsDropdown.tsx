@@ -175,11 +175,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
         if (h3 && dl) {
           // This is a folder
           const folderName = h3.textContent || 'Imported Folder';
-          const newFolder = createFolder(folderName, undefined, [], importedFolders);
-          
-          if (parentFolderId) {
-            newFolder.parentId = parentFolderId;
-          }
+          const newFolder = createFolder(folderName, undefined, [], importedFolders, parentFolderId);
           
           importedFolders.push(newFolder);
           folderMap[dl.id || `folder_${importedFolders.length}`] = newFolder;
@@ -215,9 +211,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
               url, 
               thumbnail, 
               initialTags, 
-              parentFolderId, 
-              bookmarks,
-              currentOrder++
+              parentFolderId
             );
             
             importedBookmarks.push(newBookmark);
@@ -242,10 +236,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
           title, 
           url, 
           thumbnail, 
-          tags, 
-          undefined, 
-          bookmarks,
-          currentOrder + index
+          tags
         );
         
         importedBookmarks.push(newBookmark);
@@ -294,9 +285,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
           url, 
           thumbnail, 
           tags, 
-          item.folderId, 
-          bookmarks,
-          currentOrder + index
+          item.folderId
         );
         
         importedBookmarks.push(newBookmark);
