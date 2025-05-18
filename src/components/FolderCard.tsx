@@ -37,12 +37,12 @@ const FolderCard: React.FC<FolderCardProps> = ({
 
   return (
     <Card 
-      className="h-full overflow-hidden transition-shadow hover:shadow-lg border-2 border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800 relative"
+      className="h-full overflow-hidden transition-shadow hover:shadow-lg relative"
       onDoubleClick={handleDoubleClick}
     >
       <CardContent className="p-0 h-full flex flex-col relative">
-        {/* Folder name at top left */}
-        <div className="absolute top-0 left-0 z-10 p-2">
+        {/* Folder name at top left with increased padding */}
+        <div className="absolute top-0 left-0 z-10 pt-[20px] pl-[20px]">
           <span className="text-sm font-medium truncate text-amber-800 dark:text-amber-200">
             {folder.name}
           </span>
@@ -51,14 +51,14 @@ const FolderCard: React.FC<FolderCardProps> = ({
         {/* Full-width image */}
         <div className="w-full h-full flex-grow">
           <img
-            src={folder.image}
+            src="/lovable-uploads/ee3d1214-9131-4ec4-9312-ddc55b3b8d6f.png"
             alt={folder.name}
             className="w-full h-full object-cover"
           />
         </div>
 
-        {/* Edit buttons positioned at bottom right with 25px padding */}
-        <div className="absolute bottom-[25px] right-[25px] z-10 flex space-x-3">
+        {/* Edit buttons positioned at bottom right with increased padding */}
+        <div className="absolute bottom-[20px] right-[20px] z-10 flex space-x-3">
           <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
               <DialogTrigger asChild>
