@@ -84,7 +84,7 @@ const FolderCard: React.FC<FolderCardProps> = ({
             <img
               src="/lovable-uploads/ee3d1214-9131-4ec4-9312-ddc55b3b8d6f.png"
               alt={folder.name}
-              className="w-[85%] h-[85%] object-contain" // Increased size for better visibility
+              className="w-[90%] h-[90%] object-contain" // Increased size for better visibility
             />
           </div>
           
@@ -124,7 +124,7 @@ const FolderCard: React.FC<FolderCardProps> = ({
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Edit Folder</DialogTitle>
+                  <DialogTitle className="bg-bookmark-blue text-white p-4 -mt-6 -mx-6 rounded-t-lg">Edit Folder</DialogTitle>
                 </DialogHeader>
                 <FolderForm 
                   initialFolder={folder} 

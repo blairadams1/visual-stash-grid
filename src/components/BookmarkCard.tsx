@@ -136,10 +136,10 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
     const isMediumCard = cardSize === 'medium';
     const isLargeCard = cardSize === 'large';
 
-    // Improved positioning classes for different card sizes
+    // Improved positioning classes for different card sizes - adjusted for large cards
     const getContentClasses = () => {
       if (isLargeCard) {
-        return 'bottom-0 left-0 right-0 px-4 py-5 pb-6';
+        return 'bottom-0 left-0 right-0 px-4 py-5 pb-8 translate-y-[-15%]'; // Moved up 15% for large cards
       } else if (isMediumCard) {
         return 'bottom-0 left-0 right-0 p-3 pb-3';
       } else {

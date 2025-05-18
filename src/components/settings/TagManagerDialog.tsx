@@ -24,7 +24,7 @@ const TagManagerDialog: React.FC<TagManagerDialogProps> = ({ isOpen, onOpenChang
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Manage Tags</DialogTitle>
+          <DialogTitle className="bg-bookmark-blue text-white p-4 -mt-6 -mx-6 rounded-t-lg">Manage Tags</DialogTitle>
         </DialogHeader>
         <TagManager />
       </DialogContent>

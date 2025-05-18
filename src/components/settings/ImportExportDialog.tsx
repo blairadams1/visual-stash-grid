@@ -35,8 +35,10 @@ const ImportExportDialog: React.FC<ImportExportDialogProps> = ({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Import/Export Bookmarks</AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogTitle className="bg-bookmark-blue text-white p-4 -mt-6 -mx-6 rounded-t-lg">
+            Import/Export Bookmarks
+          </AlertDialogTitle>
+          <AlertDialogDescription className="pt-4">
             Choose a format to import or export your bookmarks.
           </AlertDialogDescription>
         </AlertDialogHeader>
