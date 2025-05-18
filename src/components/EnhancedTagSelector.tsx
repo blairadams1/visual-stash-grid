@@ -117,7 +117,7 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
                   variant={selectedTags.includes(tag) ? "default" : "outline"}
                   className={`cursor-pointer ${
                     selectedTags.includes(tag)
-                      ? "bg-bookmark-blue hover:bg-bookmark-darkBlue text-white"
+                      ? "bg-bookmark-blue hover:bg-bookmark-darkBlue text-white flex items-center gap-1"
                       : "border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-softBlue"
                   }`}
                   onClick={() =>
@@ -127,6 +127,7 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
                   }
                 >
                   {tag}
+                  {selectedTags.includes(tag) && <X className="h-3 w-3" />}
                 </Badge>
               ))
             ) : (

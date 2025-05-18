@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Bookmark } from "@/lib/bookmarkUtils";
+import { X } from "lucide-react";
 
 interface TagSelectorProps {
   availableTags: string[];
@@ -76,10 +77,11 @@ const TagSelector: React.FC<TagSelectorProps> = ({
           {selectedTags.map((tag) => (
             <Badge
               key={tag}
-              className="bg-bookmark-blue text-white px-3 cursor-pointer hover:bg-bookmark-darkBlue"
+              className="bg-bookmark-blue text-white px-3 cursor-pointer hover:bg-bookmark-darkBlue flex items-center gap-1"
               onClick={() => onTagDeselect(tag)}
             >
-              {tag} ×
+              {tag}
+              <X className="h-3 w-3" />
             </Badge>
           ))}
         </div>

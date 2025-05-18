@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -28,7 +29,6 @@ const Index = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
   // Presentation settings
-  const [layout, setLayout] = useLocalStorage<'grid' | 'list' | 'compact'>('layout', 'grid');
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
   const [cardSize, setCardSize] = useLocalStorage<'small' | 'medium' | 'large'>('cardSize', 'medium');
   
@@ -123,10 +123,21 @@ const Index = () => {
   // Sort bookmarks by order
   const sortedBookmarks = [...filteredBookmarks].sort((a, b) => a.order - b.order);
 
-  // Get card size based on card size setting - update this function to just return the size directly
-  const getCardSize = () => {
-    return cardSize;
+  // Get current site information for quick bookmarking
+  const getCurrentPageInfo = () => {
+    if (typeof window !== 'undefined') {
+      return {
+        title: document.title || "TagMarked",
+        url: window.location.href || "https://tagmarked.app"
+      };
+    }
+    return {
+      title: "TagMarked",
+      url: "https://tagmarked.app"
+    };
   };
+
+  const currentPage = getCurrentPageInfo();
 
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
@@ -196,10 +207,8 @@ const Index = () => {
               
               <SettingsDropdown 
                 bookmarks={bookmarks} 
-                onChangeLayout={setLayout}
                 onChangeTheme={setTheme}
                 onChangeCardSize={setCardSize}
-                currentLayout={layout}
                 currentTheme={theme}
                 currentCardSize={cardSize}
               />
@@ -226,18 +235,17 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container max-w-full py-8">
+      <main className="container max-w-full py-4">
         {/* Bookmark Form */}
         {showForm && (
-          <>
-            <div className="px-2">
-              <BookmarkForm
-                onAddBookmark={handleAddBookmark}
-                existingBookmarks={bookmarks}
-              />
-              <Separator className="my-6" />
-            </div>
-          </>
+          <div className="px-4 py-4 bg-white dark:bg-gray-800 mb-6 rounded-lg shadow-sm">
+            <BookmarkForm
+              onAddBookmark={handleAddBookmark}
+              existingBookmarks={bookmarks}
+              initialTitle={currentPage.title}
+              initialUrl={currentPage.url}
+            />
+          </div>
         )}
 
         {/* Bookmark Grid */}
@@ -249,8 +257,7 @@ const Index = () => {
               onTagClick={handleTagSelect}
               onDeleteBookmark={handleDeleteBookmark}
               onUpdateBookmark={handleUpdateBookmark}
-              layout={layout}
-              cardSize={getCardSize()}
+              cardSize={cardSize}
             />
           ) : (
             <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-8 rounded-lg shadow text-center mx-2`}>

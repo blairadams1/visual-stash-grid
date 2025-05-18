@@ -32,6 +32,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
     const [editedNotes, setEditedNotes] = useState(bookmark.notes || "");
     const [allBookmarks] = useLocalStorage<Bookmark[]>("bookmarks", []);
     const { toast } = useToast();
+    const [cardSize] = useLocalStorage<'small' | 'medium' | 'large'>('cardSize', 'medium');
 
     // Get all unique tags from bookmarks for tag suggestions
     const allTags = React.useMemo(() => {
@@ -112,6 +113,9 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
       });
     };
 
+    // Object-fit property based on card size
+    const objectFitStyle = cardSize === 'small' ? 'object-top' : 'object-cover';
+
     return (
       <>
         <Card
@@ -123,7 +127,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
               src={imageError ? generatePlaceholderThumbnail() : bookmark.thumbnail}
               alt={bookmark.title}
               onError={handleImageError}
-              className="w-full h-full object-cover"
+              className={`w-full h-full ${objectFitStyle}`}
             />
             
             {/* Gradient overlay */}
@@ -136,7 +140,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
               />
             </div>
 
-            {/* Settings icon - moved to the left side */}
+            {/* Settings button - left side */}
             <Button
               variant="ghost"
               size="icon"
@@ -183,7 +187,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
             </div>
           </div>
 
-          {/* Delete button - moved to the right side */}
+          {/* Delete button - right side */}
           <Button
             variant="destructive"
             size="sm"

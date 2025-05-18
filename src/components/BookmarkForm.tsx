@@ -17,15 +17,19 @@ interface BookmarkFormProps {
   onAddBookmark: (bookmark: Bookmark) => void;
   existingBookmarks: Bookmark[];
   selectedCollectionId?: string | null;
+  initialUrl?: string;
+  initialTitle?: string;
 }
 
 const BookmarkForm: React.FC<BookmarkFormProps> = ({ 
   onAddBookmark, 
   existingBookmarks, 
-  selectedCollectionId = null 
+  selectedCollectionId = null,
+  initialUrl = "",
+  initialTitle = "",
 }) => {
-  const [url, setUrl] = useState("");
-  const [title, setTitle] = useState("");
+  const [url, setUrl] = useState(initialUrl);
+  const [title, setTitle] = useState(initialTitle);
   const [customTags, setCustomTags] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [collectionId, setCollectionId] = useState<string | null>(null);
@@ -37,6 +41,12 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({
   useEffect(() => {
     setCollectionId(selectedCollectionId);
   }, [selectedCollectionId]);
+
+  // Update form when initial values change
+  useEffect(() => {
+    setUrl(initialUrl);
+    setTitle(initialTitle);
+  }, [initialUrl, initialTitle]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +136,7 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({
   const flatCollections = getFlatCollections(collections);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 mb-6 h-[40vh] overflow-y-auto">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-5">
         <div className="md:col-span-2">
           <Input
