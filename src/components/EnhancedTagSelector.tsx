@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -327,14 +328,14 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
                   className="flex-1"
                 />
                 <Select 
-                  value={selectedCategoryId || ''} 
-                  onValueChange={(value) => setSelectedCategoryId(value === '' ? undefined : value)}
+                  value={selectedCategoryId || 'none'} 
+                  onValueChange={(value) => setSelectedCategoryId(value === 'none' ? undefined : value)}
                 >
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Category</SelectItem>
+                    <SelectItem value="none">No Category</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}

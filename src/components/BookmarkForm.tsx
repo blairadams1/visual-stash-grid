@@ -160,7 +160,7 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({
         </div>
         <div>
           <Select
-            value={collectionId || ''}
+            value={collectionId || 'none'}
             onValueChange={(value) => setCollectionId(value === 'none' ? null : value)}
           >
             <SelectTrigger className="w-full">
