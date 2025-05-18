@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Folder as FolderType } from "@/lib/bookmarkUtils";
 import FolderForm from './FolderForm';
+import { AspectRatio } from "./ui/aspect-ratio";
 
 interface FolderCardProps {
   folder: FolderType;
@@ -41,58 +42,60 @@ const FolderCard: React.FC<FolderCardProps> = ({
       onDoubleClick={handleDoubleClick}
     >
       <CardContent className="p-0 h-full flex flex-col relative">
-        {/* Folder name at top left using percentage positioning */}
-        <div className="absolute left-[6%] top-[5%] z-10">
-          <span className="text-sm font-medium truncate text-amber-800 dark:text-amber-200">
-            {folder.name}
-          </span>
-        </div>
-
-        {/* Full-width image with aspect ratio maintained */}
-        <div className="w-full h-full flex-grow relative">
-          <img
-            src="/lovable-uploads/ee3d1214-9131-4ec4-9312-ddc55b3b8d6f.png"
-            alt={folder.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Edit buttons positioned at bottom right with percentage positioning */}
-        <div className="absolute bottom-[8%] right-[6%] z-10 flex space-x-3">
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-              <DialogTrigger asChild>
-                <Edit className="h-4 w-4" />
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Edit Folder</DialogTitle>
-                </DialogHeader>
-                <FolderForm 
-                  initialFolder={folder} 
-                  onSubmit={(updatedFolder) => {
-                    onUpdate(folder.id, updatedFolder);
-                    setIsEditDialogOpen(false);
-                  }}
-                  submitLabel="Update"
-                  onCancel={() => setIsEditDialogOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (confirm("Are you sure you want to delete this folder?")) {
-                onDelete(folder.id);
-              }
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+        {/* Container for the folder image with consistent aspect ratio */}
+        <div className="w-full h-full relative">
+          <AspectRatio ratio={3/2}>
+            <img
+              src="/lovable-uploads/ee3d1214-9131-4ec4-9312-ddc55b3b8d6f.png"
+              alt={folder.name}
+              className="w-full h-full object-cover"
+            />
+          </AspectRatio>
+          
+          {/* Folder name at top left */}
+          <div className="absolute left-[6%] top-[8%] z-10">
+            <span className="text-sm font-medium truncate text-amber-800 dark:text-amber-200">
+              {folder.name}
+            </span>
+          </div>
+          
+          {/* Edit buttons positioned at bottom right */}
+          <div className="absolute bottom-[8%] right-[6%] z-10 flex space-x-3">
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogTrigger asChild>
+                  <Edit className="h-4 w-4" />
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Edit Folder</DialogTitle>
+                  </DialogHeader>
+                  <FolderForm 
+                    initialFolder={folder} 
+                    onSubmit={(updatedFolder) => {
+                      onUpdate(folder.id, updatedFolder);
+                      setIsEditDialogOpen(false);
+                    }}
+                    submitLabel="Update"
+                    onCancel={() => setIsEditDialogOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm("Are you sure you want to delete this folder?")) {
+                  onDelete(folder.id);
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardContent>
       

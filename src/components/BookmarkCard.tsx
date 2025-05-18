@@ -1,4 +1,3 @@
-
 import { Bookmark } from "@/lib/bookmarkUtils";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { AspectRatio } from "./ui/aspect-ratio";
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -120,72 +120,74 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
       <>
         <Card
           ref={ref}
-          className="group relative overflow-hidden rounded-lg shadow-md h-52 cursor-grab active:cursor-grabbing"
+          className="group relative overflow-hidden rounded-lg shadow-md h-full w-full cursor-grab active:cursor-grabbing"
         >
-          <div className="absolute inset-0">
-            <img
-              src={imageError ? generatePlaceholderThumbnail() : bookmark.thumbnail}
-              alt={bookmark.title}
-              onError={handleImageError}
-              className={`w-full h-full ${objectFitStyle}`}
-            />
-            
-            {/* Gradient overlay */}
-            <div className="absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-t from-black/80 to-transparent">
-              <a
-                href={bookmark.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="absolute inset-0"
+          <AspectRatio ratio={3/2}>
+            <div className="absolute inset-0">
+              <img
+                src={imageError ? generatePlaceholderThumbnail() : bookmark.thumbnail}
+                alt={bookmark.title}
+                onError={handleImageError}
+                className="w-full h-full object-cover"
               />
-            </div>
+              
+              {/* Gradient overlay */}
+              <div className="absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-t from-black/80 to-transparent">
+                <a
+                  href={bookmark.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute inset-0"
+                />
+              </div>
 
-            {/* Settings button - left side */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity bg-bookmark-blue/20 text-white hover:bg-bookmark-blue/40 p-1.5 h-8 w-8 backdrop-blur-sm"
-              onClick={handleSettingsClick}
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
+              {/* Settings button - left side */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity bg-bookmark-blue/20 text-white hover:bg-bookmark-blue/40 p-1.5 h-8 w-8 backdrop-blur-sm"
+                onClick={handleSettingsClick}
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
 
-            {/* Content overlay */}
-            <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-              <h3 className="text-sm font-medium line-clamp-1 mb-2">
-                {bookmark.title}
-              </h3>
-              <div className="flex flex-wrap gap-1">
-                {bookmark.tags.slice(0, 5).map((tag) => (
-                  <Button
-                    key={tag}
-                    variant="outline"
-                    size="sm"
-                    className="h-6 px-2 text-xs bg-black/20 hover:bg-bookmark-blue text-white border-white/20 hover:text-white hover:border-transparent"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onTagClick(tag);
-                    }}
-                  >
-                    {tag}
-                  </Button>
-                ))}
-                {bookmark.tags.length > 5 && (
-                  <span className="text-xs text-gray-300 flex items-center">
-                    +{bookmark.tags.length - 5}
-                  </span>
+              {/* Content overlay */}
+              <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                <h3 className="text-sm font-medium line-clamp-1 mb-2">
+                  {bookmark.title}
+                </h3>
+                <div className="flex flex-wrap gap-1">
+                  {bookmark.tags.slice(0, 5).map((tag) => (
+                    <Button
+                      key={tag}
+                      variant="outline"
+                      size="sm"
+                      className="h-6 px-2 text-xs bg-black/20 hover:bg-bookmark-blue text-white border-white/20 hover:text-white hover:border-transparent"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onTagClick(tag);
+                      }}
+                    >
+                      {tag}
+                    </Button>
+                  ))}
+                  {bookmark.tags.length > 5 && (
+                    <span className="text-xs text-gray-300 flex items-center">
+                      +{bookmark.tags.length - 5}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Notes indicator if present */}
+                {bookmark.notes && (
+                  <div className="mt-2 text-xs text-gray-300">
+                    <span className="bg-white/20 px-1 py-0.5 rounded">Note</span>
+                  </div>
                 )}
               </div>
-              
-              {/* Notes indicator if present */}
-              {bookmark.notes && (
-                <div className="mt-2 text-xs text-gray-300">
-                  <span className="bg-white/20 px-1 py-0.5 rounded">Note</span>
-                </div>
-              )}
             </div>
-          </div>
+          </AspectRatio>
 
           {/* Delete button - right side */}
           <Button
