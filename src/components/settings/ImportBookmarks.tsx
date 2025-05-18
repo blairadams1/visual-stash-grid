@@ -1,0 +1,109 @@
+
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Upload } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import { Bookmark, Folder } from '@/lib/bookmarkUtils';
+import { parseHTMLBookmarks, processJSONBookmarks } from '@/lib/importExportUtils';
+
+interface ImportBookmarksProps {
+  onImportBookmarks?: (bookmarks: Bookmark[], folders?: Folder[]) => void;
+}
+
+const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks }) => {
+  const { toast } = useToast();
+
+  // Function to handle file import
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>, format: 'json' | 'html') => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      try {
+        let importResults = { bookmarks: [] as Bookmark[], folders: [] as Folder[], error: null as string | null };
+        
+        if (format === 'json') {
+          // Parse JSON and validate
+          const importedData = JSON.parse(content);
+          importResults = processJSONBookmarks(importedData);
+        } else if (format === 'html') {
+          // Parse HTML bookmarks
+          importResults = parseHTMLBookmarks(content);
+        }
+        
+        if (importResults.error) {
+          toast({
+            title: "Import Error",
+            description: importResults.error,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (importResults.bookmarks.length > 0) {
+          if (onImportBookmarks) {
+            onImportBookmarks(importResults.bookmarks, importResults.folders);
+            toast({
+              title: "Import Successful",
+              description: `Imported ${importResults.bookmarks.length} bookmarks and ${importResults.folders.length} folders.`,
+            });
+          }
+        } else {
+          toast({
+            title: "Import Error",
+            description: "No valid bookmarks found in the file.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Import Error",
+          description: `Error importing file: ${error instanceof Error ? error.message : String(error)}`,
+          variant: "destructive",
+        });
+      }
+      
+      // Reset the file input
+      event.target.value = '';
+    };
+    
+    reader.readAsText(file);
+  };
+
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold pt-2">Import Bookmarks</h3>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col">
+          <Button variant="outline" className="mb-2" onClick={() => document.getElementById('import-json')?.click()}>
+            <Upload className="mr-2 h-4 w-4" /> Import JSON
+          </Button>
+          <input 
+            id="import-json" 
+            type="file" 
+            accept=".json" 
+            className="hidden" 
+            onChange={(e) => handleFileImport(e, 'json')}
+          />
+        </div>
+        
+        <div className="flex flex-col">
+          <Button variant="outline" className="mb-2" onClick={() => document.getElementById('import-html')?.click()}>
+            <Upload className="mr-2 h-4 w-4" /> Import HTML
+          </Button>
+          <input 
+            id="import-html" 
+            type="file" 
+            accept=".html,.htm" 
+            className="hidden" 
+            onChange={(e) => handleFileImport(e, 'html')}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ImportBookmarks;
