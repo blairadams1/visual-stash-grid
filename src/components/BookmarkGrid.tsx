@@ -1,4 +1,3 @@
-
 import { Bookmark, Collection, Folder } from "@/lib/bookmarkUtils";
 import BookmarkCard from "./BookmarkCard";
 import FolderCard from "./FolderCard";
@@ -70,15 +69,15 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
       const draggedElement = event.currentTarget as HTMLElement;
       const clone = draggedElement.cloneNode(true) as HTMLElement;
       
-      // Style the clone
+      // Style the clone - more subtle
       clone.style.width = `${draggedElement.offsetWidth}px`;
       clone.style.height = `${draggedElement.offsetHeight}px`;
       clone.style.opacity = '0.6';
       clone.style.position = 'absolute';
       clone.style.top = '-1000px';
       clone.style.left = '-1000px';
-      clone.style.border = '2px dashed #3b82f6';
-      clone.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+      clone.style.border = '1px solid #3b82f6'; // Thinner border
+      clone.style.backgroundColor = 'transparent'; // Remove background color
       clone.style.borderRadius = '8px';
       
       // Append clone to document body, set as drag image, then remove
@@ -299,15 +298,15 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
           onTouchMove={(e) => isMobile && handleTouchMove(e, index, type, type === 'folder' ? item.id : undefined)}
           onTouchEnd={() => isMobile && handleTouchEnd()}
           className={`transition-transform ${
-            (draggedIndex === index && draggedType === type) ? "opacity-50 scale-105 z-10" : "opacity-100"
+            (draggedIndex === index && draggedType === type) ? "opacity-50" : "opacity-100"
           } ${
-            (targetIndex === index && draggedIndex !== index) || (type === 'folder' && draggedOverFolder === item.id)
-              ? "border-2 border-blue-500 ring-2 ring-blue-400/50 shadow-lg"
+            type === 'folder' && draggedOverFolder === item.id
+              ? "ring-2 ring-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)]" // Subtle blue shadow for folders
               : ""
           }`}
         >
           {index === targetIndex && draggedIndex !== null && draggedIndex !== index && (
-            <div className="absolute inset-0 border-4 border-blue-500 rounded-lg z-0 bg-blue-100/20 backdrop-blur-sm pointer-events-none"></div>
+            <div className="absolute top-0 left-0 w-full h-1 bg-blue-500 z-10"></div>
           )}
           {type === 'bookmark' ? (
             <BookmarkCard
@@ -324,9 +323,6 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
               onUpdate={onUpdateFolder}
               onDoubleClick={onOpenFolder}
             />
-          )}
-          {index === targetIndex && draggedIndex !== null && draggedIndex !== index && (
-            <div className="absolute left-0 top-0 w-full h-1 bg-blue-500 shadow-md z-20"></div>
           )}
         </div>
       ))}
