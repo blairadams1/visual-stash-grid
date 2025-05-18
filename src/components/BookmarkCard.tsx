@@ -29,6 +29,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
     const [editedTags, setEditedTags] = useState(bookmark.tags.join(", "));
     const [customThumbnailFile, setCustomThumbnailFile] = useState<File | null>(null);
     const [customThumbnailPreview, setCustomThumbnailPreview] = useState("");
+    const [editedNotes, setEditedNotes] = useState(bookmark.notes || "");
     const [allBookmarks] = useLocalStorage<Bookmark[]>("bookmarks", []);
     const { toast } = useToast();
 
@@ -95,6 +96,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
         title: editedTitle,
         url: editedUrl,
         tags: processedTags,
+        notes: editedNotes
       };
       
       // Add custom thumbnail if provided
@@ -124,8 +126,8 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
               className="w-full h-full object-cover"
             />
             
-            {/* Gradient overlay - moved down 20% as requested */}
-            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/80 to-transparent">
+            {/* Gradient overlay - moved up 20% as requested */}
+            <div className="absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-t from-black/80 to-transparent">
               <a
                 href={bookmark.url}
                 target="_blank"
@@ -134,11 +136,11 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
               />
             </div>
 
-            {/* Settings icon */}
+            {/* Settings icon with blue background */}
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 text-white hover:bg-black/40 p-1.5 h-8 w-8"
+              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-bookmark-blue/20 text-white hover:bg-bookmark-blue/40 p-1.5 h-8 w-8 backdrop-blur-sm"
               onClick={handleSettingsClick}
             >
               <Settings className="h-4 w-4" />
@@ -171,6 +173,13 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
                   </span>
                 )}
               </div>
+              
+              {/* Notes indicator if present */}
+              {bookmark.notes && (
+                <div className="mt-2 text-xs text-gray-300">
+                  <span className="bg-white/20 px-1 py-0.5 rounded">Note</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -212,6 +221,18 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
                   id="url"
                   value={editedUrl}
                   onChange={(e) => setEditedUrl(e.target.value)}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={editedNotes}
+                  onChange={(e) => setEditedNotes(e.target.value)}
+                  placeholder="Add notes about this bookmark"
+                  className="resize-none"
+                  rows={3}
                 />
               </div>
               

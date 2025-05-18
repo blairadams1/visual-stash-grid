@@ -10,22 +10,12 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
-import { Filter, Plus, RefreshCw, FolderOpen } from "lucide-react";
+import { Filter, Plus, RefreshCw } from 'lucide-react';
 import { 
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import CollectionsPanel from "@/components/CollectionsPanel";
-import { useCollections } from "@/hooks/useCollections";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import SettingsDropdown from "@/components/SettingsDropdown";
 
 const Index = () => {
@@ -35,12 +25,24 @@ const Index = () => {
   // State for search and filtering
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
-  const { collections } = useCollections();
+  // Presentation settings
+  const [layout, setLayout] = useLocalStorage<'grid' | 'list' | 'compact'>('layout', 'grid');
+  const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [cardSize, setCardSize] = useLocalStorage<'small' | 'medium' | 'large'>('cardSize', 'medium');
+  
   const { toast } = useToast();
+  
+  // Apply theme when it changes
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   // Force refresh bookmarks from local storage
   useEffect(() => {
@@ -60,11 +62,6 @@ const Index = () => {
       });
     }
   };
-
-  // Calculate available tags from all bookmarks
-  const availableTags = Array.from(
-    new Set(bookmarks.flatMap((bookmark) => bookmark.tags))
-  ).sort();
 
   // Handle adding a new bookmark
   const handleAddBookmark = (bookmark: Bookmark) => {
@@ -108,11 +105,6 @@ const Index = () => {
     setSelectedTags([]);
   };
 
-  // Handle collection selection
-  const handleSelectCollection = (collectionId: string | null) => {
-    setSelectedCollectionId(collectionId);
-  };
-
   // Filter bookmarks based on search query and selected tags
   const filteredBookmarks = bookmarks.filter((bookmark) => {
     // Filter by search query
@@ -132,24 +124,35 @@ const Index = () => {
   // Sort bookmarks by order
   const sortedBookmarks = [...filteredBookmarks].sort((a, b) => a.order - b.order);
 
-  // Get selected collection name if any
-  const selectedCollection = collections.find(c => c.id === selectedCollectionId);
+  // Get card height based on card size setting
+  const getCardHeight = () => {
+    switch (cardSize) {
+      case 'small':
+        return 'h-40';
+      case 'large':
+        return 'h-64';
+      default:
+        return 'h-52'; // medium size
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="container max-w-full px-4 py-6">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+      <header className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow`}>
+        <div className="container max-w-full px-4 py-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-col">
-              <h1 className="text-2xl font-bold text-bookmark-darkBlue mb-2">
-                TagMarked
-                {selectedCollection && (
-                  <span className="ml-2 text-gray-500">
-                    / {selectedCollection.name}
-                  </span>
-                )}
-              </h1>
-              <p className="text-gray-500">Save and organize your bookmarks visually</p>
+            <div className="flex items-center">
+              <img 
+                src="/lovable-uploads/9350c0ba-fcd2-477d-b549-a53925a712bd.png" 
+                alt="TagMarked Logo" 
+                className="h-8 w-8 mr-3"
+              />
+              <div>
+                <h1 className="text-xl font-bold text-bookmark-blue">
+                  TagMarked
+                </h1>
+                <p className="text-xs text-gray-500">Your visual bookmark manager</p>
+              </div>
             </div>
             
             <div className="flex items-center gap-3">
@@ -172,29 +175,6 @@ const Index = () => {
               >
                 <RefreshCw className="h-5 w-5" />
               </Button>
-
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    aria-label="Open collections"
-                  >
-                    <FolderOpen className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left">
-                  <SheetHeader className="mb-4">
-                    <SheetTitle>Collections</SheetTitle>
-                    <SheetDescription>
-                      Organize your bookmarks into collections
-                    </SheetDescription>
-                  </SheetHeader>
-                  <CollectionsPanel 
-                    selectedCollectionId={selectedCollectionId}
-                    onSelectCollection={handleSelectCollection}
-                  />
-                </SheetContent>
-              </Sheet>
 
               <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                 <PopoverTrigger asChild>
@@ -222,7 +202,15 @@ const Index = () => {
                 </PopoverContent>
               </Popover>
               
-              <SettingsDropdown bookmarks={bookmarks} />
+              <SettingsDropdown 
+                bookmarks={bookmarks} 
+                onChangeLayout={setLayout}
+                onChangeTheme={setTheme}
+                onChangeCardSize={setCardSize}
+                currentLayout={layout}
+                currentTheme={theme}
+                currentCardSize={cardSize}
+              />
               
               <div className="relative w-full md:w-64">
                 <Input
@@ -230,7 +218,7 @@ const Index = () => {
                   placeholder="Search bookmarks..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pr-8"
+                  className={`w-full pr-8 ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : ''}`}
                 />
                 {searchQuery && (
                   <button
@@ -254,7 +242,6 @@ const Index = () => {
               <BookmarkForm
                 onAddBookmark={handleAddBookmark}
                 existingBookmarks={bookmarks}
-                selectedCollectionId={selectedCollectionId}
               />
               <Separator className="my-6" />
             </div>
@@ -270,13 +257,13 @@ const Index = () => {
               onTagClick={handleTagSelect}
               onDeleteBookmark={handleDeleteBookmark}
               onUpdateBookmark={handleUpdateBookmark}
-              selectedCollectionId={selectedCollectionId}
-              collections={collections}
+              layout={layout}
+              cardSize={getCardHeight()}
             />
           ) : (
-            <div className="bg-white p-8 rounded-lg shadow text-center mx-2">
+            <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-8 rounded-lg shadow text-center mx-2`}>
               <h2 className="text-xl font-medium mb-2">No bookmarks found</h2>
-              <p className="text-gray-500 mb-4">
+              <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} mb-4`}>
                 {bookmarks.length === 0
                   ? "Add your first bookmark to get started."
                   : "Try adjusting your search or filter criteria."}
