@@ -123,6 +123,33 @@ const Index = () => {
     setShowFolderForm(false);
   };
 
+  // Handle importing bookmarks and folders
+  const handleImportBookmarks = (importedBookmarks: Bookmark[], importedFolders: Folder[] = []) => {
+    // Add folders first
+    importedFolders.forEach(folder => {
+      addFolder(folder.name, folder.image, folder.tags);
+    });
+    
+    // Then add bookmarks
+    importedBookmarks.forEach(bookmark => {
+      addBookmark(
+        bookmark.title,
+        bookmark.url,
+        bookmark.thumbnail,
+        bookmark.tags,
+        bookmark.folderId
+      );
+    });
+    
+    // Refresh to ensure everything is displayed
+    refreshBookmarks();
+    
+    toast({
+      title: "Import completed",
+      description: `Added ${importedBookmarks.length} bookmarks and ${importedFolders.length} folders.`,
+    });
+  };
+
   // Handle tag selection
   const handleTagSelect = (tag: string) => {
     setSelectedTags(prev => {
@@ -318,6 +345,7 @@ const Index = () => {
                     currentTheme={theme}
                     currentCardSize={cardSize}
                     onToggleSidebar={toggleSidebar}
+                    onImportBookmarks={handleImportBookmarks}
                   />
                   
                   <div className="relative w-full md:w-64">

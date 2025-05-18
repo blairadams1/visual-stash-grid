@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Settings, Download, Upload, Sun, Moon, Tag, Grid2X2, Grid3X3, LayoutGrid, FolderTree } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bookmark as BookmarkType } from '@/lib/bookmarkUtils';
+import { Bookmark as BookmarkType, createBookmark, Folder, createFolder } from '@/lib/bookmarkUtils';
 import TagManager from './TagManager';
 import { 
   Dialog, 
@@ -30,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useToast } from '@/components/ui/use-toast';
 
 interface SettingsDropdownProps {
   bookmarks: BookmarkType[];
@@ -38,6 +38,7 @@ interface SettingsDropdownProps {
   currentTheme: 'light' | 'dark';
   currentCardSize: 'small' | 'medium' | 'large';
   onToggleSidebar: () => void;
+  onImportBookmarks?: (bookmarks: BookmarkType[], folders?: Folder[]) => void;
 }
 
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
@@ -47,9 +48,11 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
   currentTheme,
   currentCardSize,
   onToggleSidebar,
+  onImportBookmarks,
 }) => {
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
+  const { toast } = useToast();
   
   // Function to export bookmarks as JSON
   const exportBookmarksAsJSON = () => {
@@ -93,6 +96,216 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
     downloadAnchorNode.remove();
   };
   
+  // Generate thumbnail based on URL
+  const generateThumbnail = (url: string): string => {
+    // Try to extract domain for favicon
+    try {
+      const domain = new URL(url).hostname;
+      // Return a fallback image or try to get favicon
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+    } catch (e) {
+      // Return a placeholder image if URL is invalid
+      return `https://via.placeholder.com/300x200/f0f0f0/808080?text=${encodeURIComponent(url)}`;
+    }
+  };
+  
+  // Generate automatic tags based on URL and title
+  const generateAutomaticTags = (url: string, title: string): string[] => {
+    const tags = new Set<string>();
+    
+    // Extract domain as a tag
+    try {
+      const domain = new URL(url).hostname.replace('www.', '');
+      const domainParts = domain.split('.');
+      if (domainParts.length > 0) {
+        tags.add(domainParts[0]); // Add the main domain name as a tag
+      }
+    } catch (e) {
+      // Skip if URL is invalid
+    }
+    
+    // Extract key words from title
+    if (title) {
+      // Split the title into words
+      const words = title.toLowerCase().split(/\s+/);
+      
+      // Common words to filter out
+      const commonWords = new Set(['the', 'and', 'or', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'with', 'by']);
+      
+      // Add meaningful words from title as tags (if they're at least 4 characters)
+      words.forEach(word => {
+        // Clean the word of special characters
+        const cleanWord = word.replace(/[^\w\s]/gi, '');
+        if (cleanWord.length >= 4 && !commonWords.has(cleanWord)) {
+          tags.add(cleanWord);
+        }
+      });
+    }
+    
+    // Add category tags based on URL patterns
+    if (url.includes('github.com')) tags.add('developer');
+    if (url.includes('youtube.com') || url.includes('vimeo.com')) tags.add('video');
+    if (url.includes('docs.google.com')) tags.add('document');
+    if (url.includes('medium.com') || url.includes('blog')) tags.add('blog');
+    
+    // Limit to 3-4 tags and convert Set back to array
+    return Array.from(tags).slice(0, 4);
+  };
+  
+  // Parse HTML bookmarks file
+  const parseHTMLBookmarks = (html: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const links = doc.querySelectorAll('a');
+    
+    const importedBookmarks: BookmarkType[] = [];
+    const importedFolders: Folder[] = [];
+    const folderMap: Record<string, Folder> = {};
+    let currentOrder = bookmarks.length;
+    
+    // Process folder structure first
+    const processFolder = (element: Element, parentFolderId?: string) => {
+      // Get all direct DT children that contain folders (DL)
+      const folderItems = element.querySelectorAll(':scope > dt');
+      
+      folderItems.forEach(folderItem => {
+        const h3 = folderItem.querySelector('h3');
+        const dl = folderItem.querySelector('dl');
+        
+        if (h3 && dl) {
+          // This is a folder
+          const folderName = h3.textContent || 'Imported Folder';
+          const newFolder = createFolder(folderName, undefined, [], importedFolders);
+          
+          if (parentFolderId) {
+            newFolder.parentId = parentFolderId;
+          }
+          
+          importedFolders.push(newFolder);
+          folderMap[dl.id || `folder_${importedFolders.length}`] = newFolder;
+          
+          // Process links within this folder
+          processFolder(dl, newFolder.id);
+        } else {
+          // This might be a direct bookmark
+          const link = folderItem.querySelector('a');
+          if (link) {
+            const url = link.getAttribute('href') || '';
+            const title = link.textContent || url;
+            const add_date = link.getAttribute('add_date') || '';
+            const tagsAttr = link.getAttribute('tags') || '';
+            
+            // Get tags from the TAGS attribute if available
+            let initialTags: string[] = [];
+            if (tagsAttr) {
+              initialTags = tagsAttr.split(',').map(tag => tag.trim());
+            }
+            
+            // Generate automatic tags if we don't have enough
+            if (initialTags.length < 3) {
+              const generatedTags = generateAutomaticTags(url, title);
+              // Combine and ensure uniqueness
+              const allTags = [...new Set([...initialTags, ...generatedTags])];
+              initialTags = allTags.slice(0, 4); // Limit to 4 tags
+            }
+            
+            const thumbnail = generateThumbnail(url);
+            const newBookmark = createBookmark(
+              title, 
+              url, 
+              thumbnail, 
+              initialTags, 
+              parentFolderId, 
+              bookmarks,
+              currentOrder++
+            );
+            
+            importedBookmarks.push(newBookmark);
+          }
+        }
+      });
+    };
+    
+    // Start processing from the main DL element
+    const mainDL = doc.querySelector('dl');
+    if (mainDL) {
+      processFolder(mainDL);
+    } else {
+      // Fallback to just grabbing all links if structure doesn't match expected format
+      links.forEach((link, index) => {
+        const url = link.getAttribute('href') || '';
+        const title = link.textContent || url;
+        const tags = generateAutomaticTags(url, title);
+        const thumbnail = generateThumbnail(url);
+        
+        const newBookmark = createBookmark(
+          title, 
+          url, 
+          thumbnail, 
+          tags, 
+          undefined, 
+          bookmarks,
+          currentOrder + index
+        );
+        
+        importedBookmarks.push(newBookmark);
+      });
+    }
+    
+    return { bookmarks: importedBookmarks, folders: importedFolders };
+  };
+  
+  // Process imported JSON bookmarks
+  const processJSONBookmarks = (jsonData: any) => {
+    if (!Array.isArray(jsonData)) {
+      toast({
+        title: "Import Error",
+        description: "Invalid JSON format. Expected an array of bookmarks.",
+        variant: "destructive",
+      });
+      return { bookmarks: [], folders: [] };
+    }
+    
+    const importedBookmarks: BookmarkType[] = [];
+    let currentOrder = bookmarks.length;
+    
+    jsonData.forEach((item, index) => {
+      if (typeof item === 'object' && item !== null && item.url) {
+        // Basic validation
+        const url = item.url?.toString() || '';
+        const title = item.title?.toString() || url;
+        
+        // Use existing tags or generate new ones
+        let tags = Array.isArray(item.tags) ? item.tags.filter(tag => typeof tag === 'string') : [];
+        if (tags.length < 3) {
+          // Add generated tags if we don't have enough
+          const generatedTags = generateAutomaticTags(url, title);
+          // Combine and ensure uniqueness
+          const allTags = [...new Set([...tags, ...generatedTags])];
+          tags = allTags.slice(0, 4); // Limit to 4 tags
+        }
+        
+        // Use existing thumbnail or generate one
+        const thumbnail = item.thumbnail || generateThumbnail(url);
+        
+        // Create the bookmark
+        const newBookmark = createBookmark(
+          title, 
+          url, 
+          thumbnail, 
+          tags, 
+          item.folderId, 
+          bookmarks,
+          currentOrder + index
+        );
+        
+        importedBookmarks.push(newBookmark);
+      }
+    });
+    
+    return { bookmarks: importedBookmarks, folders: [] }; // No folder support in this basic JSON format
+  };
+  
   // Function to handle file import
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>, format: 'json' | 'html') => {
     const file = event.target.files?.[0];
@@ -102,33 +315,45 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
     reader.onload = (e) => {
       const content = e.target?.result as string;
       try {
+        let importResults = { bookmarks: [] as BookmarkType[], folders: [] as Folder[] };
+        
         if (format === 'json') {
           // Parse JSON and validate
-          const importedBookmarks = JSON.parse(content);
-          if (Array.isArray(importedBookmarks)) {
-            // TODO: Implement actual import functionality
-            alert(`Imported ${importedBookmarks.length} bookmarks successfully!`);
-          } else {
-            alert('Invalid JSON format. Expected an array of bookmarks.');
-          }
+          const importedData = JSON.parse(content);
+          importResults = processJSONBookmarks(importedData);
         } else if (format === 'html') {
           // Parse HTML bookmarks
-          alert('HTML import is not fully implemented yet.');
-          // TODO: Implement HTML parsing
+          importResults = parseHTMLBookmarks(content);
+        }
+        
+        if (importResults.bookmarks.length > 0) {
+          if (onImportBookmarks) {
+            onImportBookmarks(importResults.bookmarks, importResults.folders);
+            toast({
+              title: "Import Successful",
+              description: `Imported ${importResults.bookmarks.length} bookmarks and ${importResults.folders.length} folders.`,
+            });
+          }
+        } else {
+          toast({
+            title: "Import Error",
+            description: "No valid bookmarks found in the file.",
+            variant: "destructive",
+          });
         }
       } catch (error) {
-        alert(`Error importing file: ${error}`);
+        toast({
+          title: "Import Error",
+          description: `Error importing file: ${error instanceof Error ? error.message : String(error)}`,
+          variant: "destructive",
+        });
       }
       
       // Reset the file input
       event.target.value = '';
     };
     
-    if (format === 'json') {
-      reader.readAsText(file);
-    } else {
-      reader.readAsText(file);
-    }
+    reader.readAsText(file);
   };
 
   return (

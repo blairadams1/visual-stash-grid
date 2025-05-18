@@ -27,6 +27,8 @@ interface GridItemProps {
   handleTouchMove?: (e: React.TouchEvent, index: number, type: 'bookmark' | 'folder', id?: string) => void;
   handleTouchEnd?: (e: React.TouchEvent) => void;
   heightClass?: string;
+  isSelected?: boolean; // New prop for multi-select
+  onSelect?: (id: string, isMultiSelect: boolean) => void; // New prop for selection
 }
 
 const GridItem: React.FC<GridItemProps> = ({
@@ -50,7 +52,9 @@ const GridItem: React.FC<GridItemProps> = ({
   handleTouchStart,
   handleTouchMove,
   handleTouchEnd,
-  heightClass = ''
+  heightClass = '',
+  isSelected = false,
+  onSelect
 }) => {
   // Generate unique key for item
   const itemKey = `${type}-${item.id}`;
@@ -104,6 +108,8 @@ const GridItem: React.FC<GridItemProps> = ({
           onTagClick={onTagClick}
           onDelete={onDeleteBookmark}
           onUpdate={onUpdateBookmark}
+          isSelected={isSelected}
+          onSelect={onSelect}
         />
       ) : (
         <FolderCard
@@ -112,6 +118,8 @@ const GridItem: React.FC<GridItemProps> = ({
           onDelete={onDeleteFolder}
           onUpdate={onUpdateFolder}
           onDoubleClick={onOpenFolder}
+          isSelected={isSelected}
+          onSelect={onSelect}
         />
       )}
     </div>

@@ -14,6 +14,7 @@ import {
 import { Folder as FolderType } from "@/lib/bookmarkUtils";
 import FolderForm from './FolderForm';
 import { AspectRatio } from "./ui/aspect-ratio";
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface FolderCardProps {
   folder: FolderType;
@@ -21,6 +22,8 @@ interface FolderCardProps {
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<FolderType>) => void;
   onDoubleClick: (folderId: string) => void;
+  isSelected?: boolean; // New prop for multi-select
+  onSelect?: (id: string, isMultiSelect: boolean) => void; // New prop for selection
 }
 
 const FolderCard: React.FC<FolderCardProps> = ({
@@ -29,17 +32,37 @@ const FolderCard: React.FC<FolderCardProps> = ({
   onDelete,
   onUpdate,
   onDoubleClick,
+  isSelected,
+  onSelect,
 }) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [cardSize] = useLocalStorage<'small' | 'medium' | 'large'>('cardSize', 'medium');
 
   const handleDoubleClick = () => {
     onDoubleClick(folder.id);
   };
+  
+  // Handle card selection for multi-select
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only trigger selection if we have a selection handler and the click wasn't on a button
+    if (onSelect && !e.defaultPrevented && e.target instanceof Element) {
+      const isClickOnButton = e.target.tagName === 'BUTTON' || e.target.closest('button') !== null;
+      
+      if (!isClickOnButton) {
+        e.preventDefault();
+        onSelect(folder.id, e.ctrlKey || e.metaKey || e.shiftKey);
+      }
+    }
+  };
+  
+  const isLargeCard = cardSize === 'large';
+  const folderNamePadding = isLargeCard ? 'left-[16%]' : 'left-[12%]';
 
   return (
     <Card 
-      className="overflow-hidden transition-shadow hover:shadow-lg relative h-full"
+      className={`overflow-hidden transition-shadow hover:shadow-lg relative h-full ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
       onDoubleClick={handleDoubleClick}
+      onClick={handleCardClick}
     >
       <CardContent className="p-0 h-full flex flex-col relative">
         {/* Container for the folder image with consistent aspect ratio */}
@@ -53,13 +76,13 @@ const FolderCard: React.FC<FolderCardProps> = ({
           </AspectRatio>
           
           {/* Folder name at top with increased left padding */}
-          <div className="absolute left-[12%] top-[6%] z-10">
+          <div className={`absolute ${folderNamePadding} top-[6%] z-10`}>
             <span className="text-sm font-medium truncate text-amber-800 dark:text-amber-200">
               {folder.name}
             </span>
           </div>
           
-          {/* Action buttons - rearranged with trash first */}
+          {/* Action buttons - rearranged with trash first, then edit */}
           <div className="absolute bottom-[3%] right-[6%] z-10 flex space-x-3">
             <Button
               variant="ghost"
@@ -74,32 +97,38 @@ const FolderCard: React.FC<FolderCardProps> = ({
             >
               <Trash2 className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogTrigger asChild>
+            
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Edit className="h-4 w-4" />
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Edit Folder</DialogTitle>
-                  </DialogHeader>
-                  <FolderForm 
-                    initialFolder={folder} 
-                    onSubmit={(updatedFolder) => {
-                      onUpdate(folder.id, updatedFolder);
-                      setIsEditDialogOpen(false);
-                    }}
-                    submitLabel="Update"
-                    onCancel={() => setIsEditDialogOpen(false)}
-                  />
-                </DialogContent>
-              </Dialog>
-            </Button>
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Folder</DialogTitle>
+                </DialogHeader>
+                <FolderForm 
+                  initialFolder={folder} 
+                  onSubmit={(updatedFolder) => {
+                    onUpdate(folder.id, updatedFolder);
+                    setIsEditDialogOpen(false);
+                  }}
+                  submitLabel="Update"
+                  onCancel={() => setIsEditDialogOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </CardContent>
       
-      {/* Tags moved inside the aspect ratio container and positioned closer to bottom */}
+      {/* Tags positioned at bottom left with more padding */}
       {folder.tags && folder.tags.length > 0 && (
         <div className="absolute bottom-[2%] left-[12%] right-[6%] z-10">
           <div className="flex items-center gap-1 flex-wrap">

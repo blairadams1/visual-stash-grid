@@ -1,3 +1,4 @@
+
 import { Bookmark } from "@/lib/bookmarkUtils";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -18,10 +19,12 @@ interface BookmarkCardProps {
   onTagClick: (tag: string) => void;
   onDelete: (id: string) => void;
   onUpdate?: (id: string, updates: Partial<Bookmark>) => void;
+  isSelected?: boolean; // New prop for multi-select
+  onSelect?: (id: string, isMultiSelect: boolean) => void; // New prop for selection
 }
 
 const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
-  ({ bookmark, onTagClick, onDelete, onUpdate }, ref) => {
+  ({ bookmark, onTagClick, onDelete, onUpdate, isSelected, onSelect }, ref) => {
     const [imageError, setImageError] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editedTitle, setEditedTitle] = useState(bookmark.title);
@@ -113,14 +116,32 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
       });
     };
 
-    // Object-fit property based on card size
-    const objectFitStyle = cardSize === 'small' ? 'object-top' : 'object-cover';
+    // Handle card selection for multi-select
+    const handleCardClick = (e: React.MouseEvent) => {
+      // Only trigger selection if we have a selection handler and the click wasn't on a button or link
+      if (onSelect && !e.defaultPrevented && e.target instanceof Element) {
+        const isClickOnInteractive = ['BUTTON', 'A'].includes(e.target.tagName) ||
+                                    e.target.closest('button') !== null ||
+                                    e.target.closest('a') !== null;
+        
+        if (!isClickOnInteractive) {
+          e.preventDefault();
+          onSelect(bookmark.id, e.ctrlKey || e.metaKey || e.shiftKey);
+        }
+      }
+    };
+
+    // Different styles based on card size
+    const isLargeCard = cardSize === 'large';
+    const contentPositionClass = isLargeCard ? 'bottom-6 left-0 right-0 px-6' : 'bottom-0 left-0 right-0 p-3';
+    const titleClass = isLargeCard ? 'text-base font-medium mb-3' : 'text-sm font-medium line-clamp-1 mb-2';
 
     return (
       <>
         <Card
           ref={ref}
-          className="group relative overflow-hidden rounded-lg shadow-md h-full w-full cursor-grab active:cursor-grabbing"
+          className={`group relative overflow-hidden rounded-lg shadow-md h-full w-full cursor-grab active:cursor-grabbing ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+          onClick={handleCardClick}
         >
           <AspectRatio ratio={3/2}>
             <div className="absolute inset-0">
@@ -151,9 +172,9 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
                 <Settings className="h-4 w-4" />
               </Button>
 
-              {/* Content overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                <h3 className="text-sm font-medium line-clamp-1 mb-2">
+              {/* Content overlay - positioned differently based on card size */}
+              <div className={`absolute ${contentPositionClass} text-white`}>
+                <h3 className={titleClass}>
                   {bookmark.title}
                 </h3>
                 <div className="flex flex-wrap gap-1">
