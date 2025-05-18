@@ -1,4 +1,3 @@
-
 /**
  * This file simulates browser extension APIs that would be available in a real extension
  */
@@ -45,17 +44,17 @@ export const sendMessage = async (message: ExtensionMessage): Promise<ExtensionR
       if (existingBookmarkIndex >= 0) {
         // Update existing bookmark
         const updatedBookmark = createBookmark(
-          message.bookmark.url,
           message.bookmark.title,
-          message.bookmark.tags,
-          existingBookmarks
+          message.bookmark.url,
+          existingBookmarks[existingBookmarkIndex].thumbnail,
+          message.bookmark.tags
         );
         
         // Keep the same ID and order but update other properties
         updatedBookmark.id = existingBookmarks[existingBookmarkIndex].id;
         updatedBookmark.order = existingBookmarks[existingBookmarkIndex].order;
         
-        // Handle createdAt date (may not exist in older bookmarks)
+        // Handle createdAt date
         if (existingBookmarks[existingBookmarkIndex].createdAt) {
           updatedBookmark.createdAt = existingBookmarks[existingBookmarkIndex].createdAt;
         }
@@ -76,10 +75,10 @@ export const sendMessage = async (message: ExtensionMessage): Promise<ExtensionR
       } else {
         // Create a new bookmark
         const newBookmark = createBookmark(
-          message.bookmark.url,
           message.bookmark.title,
-          message.bookmark.tags,
-          existingBookmarks
+          message.bookmark.url,
+          undefined,
+          message.bookmark.tags
         );
         
         // Add it to storage

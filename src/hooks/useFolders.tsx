@@ -22,7 +22,7 @@ export function useFolders() {
       .filter(tag => tag.trim().length > 0 && tag.trim().length <= 15 && !tag.includes('.'))
       .filter((tag, index, self) => self.indexOf(tag) === index); // Remove duplicates
       
-    const newFolder = createFolder(name, folders, image, validatedTags);
+    const newFolder = createFolder(name, image, validatedTags, folders);
     setFolders([...folders, newFolder]);
     return newFolder;
   }, [folders, setFolders]);

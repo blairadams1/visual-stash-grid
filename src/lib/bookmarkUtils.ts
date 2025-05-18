@@ -10,8 +10,10 @@ export interface Bookmark {
   tags: string[];
   order: number;
   dateAdded: string;
+  notes?: string; // Added notes property
   collectionId?: string;
   folderId?: string;
+  createdAt?: string; // Added createdAt property for backwards compatibility
 }
 
 export interface Collection {
@@ -51,10 +53,10 @@ export interface TagCategory {
 export const createBookmark = (
   title: string,
   url: string,
-  existingItems: Array<Bookmark | Folder>,
   thumbnail?: string,
   tags: string[] = [],
-  folderId?: string
+  folderId?: string,
+  existingItems: Array<Bookmark | Folder> = []
 ): Bookmark => {
   // Validate tags
   const validatedTags = tags
@@ -63,11 +65,16 @@ export const createBookmark = (
     .filter((tag, index, self) => self.indexOf(tag) === index); // Remove duplicates
 
   // Calculate the highest order value
-  const highestOrder = Math.max(...existingItems.map(item => item.order || 0), 0);
+  const highestOrder = existingItems.length > 0 
+    ? Math.max(...existingItems.map(item => item.order || 0), 0)
+    : 0;
 
   // Generate a thumbnail URL if none provided - use a service that captures the top of the page
   const defaultThumbnail = thumbnail || `https://image.thum.io/get/width/600/crop/800/viewportWidth/1200/noanimate/maxAge/1/${url}`;
 
+  // Create the bookmark with current date as both dateAdded and createdAt
+  const now = new Date().toISOString();
+  
   // Create the bookmark
   return {
     id: `bookmark-${uuidv4()}`,
@@ -76,7 +83,8 @@ export const createBookmark = (
     thumbnail: defaultThumbnail,
     tags: validatedTags,
     order: highestOrder + 1,
-    dateAdded: new Date().toISOString(),
+    dateAdded: now,
+    createdAt: now,
     folderId
   };
 };
@@ -104,9 +112,9 @@ export const createCollection = (
 
 export const createFolder = (
   name: string,
-  existingItems: Array<Bookmark | Folder>,
   image: string = '/lovable-uploads/80ac03c8-9e22-4604-a202-1c5c73c568eb.png',
-  tags: string[] = []
+  tags: string[] = [],
+  existingItems: Array<Bookmark | Folder> = []
 ): Folder => {
   // Validate tags
   const validatedTags = tags
@@ -115,7 +123,9 @@ export const createFolder = (
     .filter((tag, index, self) => self.indexOf(tag) === index); // Remove duplicates
     
   // Calculate the highest order value
-  const highestOrder = Math.max(...existingItems.map(item => item.order || 0), 0);
+  const highestOrder = existingItems.length > 0 
+    ? Math.max(...existingItems.map(item => item.order || 0), 0)
+    : 0;
   
   // Create the folder
   return {
@@ -202,4 +212,53 @@ export const getDefaultTagCategories = (): TagCategory[] => {
       color: "#FFDEE2"
     }
   ];
+};
+
+// Added missing functions
+// Generate a placeholder thumbnail for bookmarks when image fails to load
+export const generatePlaceholderThumbnail = () => {
+  // Return a default placeholder image or generate one
+  return '/placeholder.svg';
+};
+
+// Generate tags automatically based on URL and title
+export const generateAutoTags = (url: string, title: string, maxTags: number = 3): { tags: string[] } => {
+  const tags: string[] = [];
+
+  // Extract domain name for potential tag
+  try {
+    const domain = new URL(url).hostname
+      .replace('www.', '')
+      .split('.')
+      .slice(0, -1)
+      .join('.');
+    
+    if (domain && domain.length <= 15 && !domain.includes('.')) {
+      tags.push(domain);
+    }
+  } catch (e) {
+    // Invalid URL, skip domain tag
+  }
+
+  // Extract potential tags from title
+  if (title) {
+    const titleWords = title
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(word => 
+        word.length > 3 && 
+        word.length <= 15 && 
+        !['http', 'https', 'www', 'com', 'net', 'org'].includes(word) &&
+        !word.includes('.')
+      );
+    
+    // Add unique title words as tags
+    for (const word of titleWords) {
+      if (tags.length < maxTags && !tags.includes(word)) {
+        tags.push(word);
+      }
+    }
+  }
+
+  return { tags };
 };

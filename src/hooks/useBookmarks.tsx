@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Bookmark, createBookmark } from '@/lib/bookmarkUtils';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -20,7 +21,10 @@ export function useBookmarks() {
       return tag.trim().length > 0 && tag.trim().length <= 15 && !tag.includes('.');
     });
     
-    const newBookmark = createBookmark(title, url, bookmarks, thumbnail, validatedTags, folderId);
+    // Filter out duplicates
+    const uniqueTags = [...new Set(validatedTags)];
+    
+    const newBookmark = createBookmark(title, url, thumbnail, uniqueTags, folderId, bookmarks);
     setBookmarks([...bookmarks, newBookmark]);
     return newBookmark;
   }, [bookmarks, setBookmarks]);
@@ -29,9 +33,9 @@ export function useBookmarks() {
   const updateBookmark = useCallback((id: string, updates: Partial<Bookmark>) => {
     // Validate tags if present
     if (updates.tags) {
-      updates.tags = updates.tags.filter(tag => {
+      updates.tags = [...new Set(updates.tags.filter(tag => {
         return tag.trim().length > 0 && tag.trim().length <= 15 && !tag.includes('.');
-      });
+      }))];
     }
     
     setBookmarks(prevBookmarks => 
