@@ -161,6 +161,40 @@ const SettingsDropdown = ({
         const newBookmarks = [...existingBookmarks];
         const highestOrder = Math.max(...existingBookmarks.map((b: any) => b.order || 0), 0);
         
+        // Extract all unique folder names for auto-tagging
+        const allFolderNames = new Set<string>();
+        const folderElements = doc.querySelectorAll('h3');
+        folderElements.forEach(folder => {
+          const folderName = folder.textContent?.trim();
+          if (folderName) allFolderNames.add(folderName);
+        });
+
+        // Common domain mapping for auto-tagging
+        const domainTagMap: Record<string, string[]> = {
+          'github.com': ['development', 'github'],
+          'stackoverflow.com': ['development', 'stackoverflow'],
+          'youtube.com': ['video', 'youtube'],
+          'linkedin.com': ['professional', 'linkedin'],
+          'twitter.com': ['social', 'twitter'],
+          'facebook.com': ['social', 'facebook'],
+          'instagram.com': ['social', 'instagram'],
+          'reddit.com': ['social', 'reddit'],
+          'medium.com': ['blog', 'reading'],
+          'dev.to': ['development', 'blog'],
+          'amazon.com': ['shopping', 'amazon'],
+          'google.com': ['search', 'google'],
+          'docs.google.com': ['documents', 'google'],
+          'drive.google.com': ['storage', 'google'],
+          'gmail.com': ['email', 'google'],
+          'udemy.com': ['learning', 'courses'],
+          'coursera.org': ['learning', 'courses'],
+          'netflix.com': ['entertainment', 'streaming'],
+          'spotify.com': ['music', 'streaming'],
+          'nytimes.com': ['news', 'reading'],
+          'cnn.com': ['news', 'reading'],
+          'bbc.com': ['news', 'reading']
+        };
+        
         links.forEach((link, index) => {
           const url = link.getAttribute('href');
           const title = link.textContent || url || 'Untitled Bookmark';
@@ -181,6 +215,49 @@ const SettingsDropdown = ({
                 }
                 parent = parent.parentElement;
               }
+              
+              // Add domain-based auto tags
+              try {
+                const urlObj = new URL(url);
+                const domain = urlObj.hostname.toLowerCase();
+                
+                // Add domain as a tag (without www. prefix)
+                const simpleDomain = domain.replace('www.', '');
+                
+                // Check if we should add specific tags for this domain
+                const domainTags = Object.entries(domainTagMap).find(([key]) => 
+                  domain.includes(key)
+                );
+                
+                if (domainTags) {
+                  tags = [...tags, ...domainTags[1]];
+                } else {
+                  // If no specific domain tags, add the domain itself as a tag
+                  tags.push(simpleDomain);
+                }
+                
+                // Add path segments as tags if they seem meaningful
+                // (not too short, not just IDs or numbers)
+                const pathSegments = urlObj.pathname.split('/')
+                  .filter(segment => 
+                    segment.length > 3 && 
+                    !/^\d+$/.test(segment) && 
+                    !['www', 'com', 'org', 'net'].includes(segment)
+                  );
+                
+                if (pathSegments.length > 0) {
+                  // Only add up to 2 path segments to avoid tag explosion
+                  tags = [...tags, ...pathSegments.slice(0, 2)];
+                }
+              } catch (e) {
+                // URL parsing failed, just continue
+              }
+              
+              // Remove duplicates and sanitize tags
+              tags = [...new Set(tags)]
+                .filter(tag => tag && tag.length > 1) // Ensure tags are not empty or too short
+                .map(tag => tag.toLowerCase().trim())
+                .slice(0, 8); // Limit to 8 tags per bookmark
               
               // Create new bookmark
               const newBookmark = {
@@ -207,7 +284,7 @@ const SettingsDropdown = ({
         
         toast({
           title: "HTML Import successful",
-          description: `${importCount} bookmarks have been imported`,
+          description: `${importCount} bookmarks have been imported with automatic tags`,
         });
         
         // Refresh the page to show the imported bookmarks
