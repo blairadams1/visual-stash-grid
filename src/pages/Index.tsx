@@ -10,7 +10,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
-import { Filter, Plus, RefreshCw, FolderOpen, Settings } from "lucide-react";
+import { Filter, Plus, RefreshCw, FolderOpen } from "lucide-react";
 import { 
   Popover,
   PopoverContent,
@@ -27,7 +27,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import SettingsDropdown from "@/components/SettingsDropdown";
-import { Link } from "react-router-dom";
 
 const Index = () => {
   // State for bookmarks from local storage
@@ -78,6 +77,15 @@ const Index = () => {
     toast({
       title: "Bookmark deleted",
     });
+  };
+
+  // Handle updating a bookmark
+  const handleUpdateBookmark = (id: string, updates: Partial<Bookmark>) => {
+    setBookmarks(
+      bookmarks.map(bookmark => 
+        bookmark.id === id ? { ...bookmark, ...updates } : bookmark
+      )
+    );
   };
 
   // Handle reordering of bookmarks
@@ -163,15 +171,6 @@ const Index = () => {
                 title="Refresh Bookmarks"
               >
                 <RefreshCw className="h-5 w-5" />
-              </Button>
-
-              <Button
-                variant="outline"
-                asChild
-              >
-                <Link to="/manage">
-                  <Settings className="h-5 w-5" />
-                </Link>
               </Button>
 
               <Sheet>
@@ -270,6 +269,7 @@ const Index = () => {
               onBookmarksReordered={handleBookmarksReordered}
               onTagClick={handleTagSelect}
               onDeleteBookmark={handleDeleteBookmark}
+              onUpdateBookmark={handleUpdateBookmark}
               selectedCollectionId={selectedCollectionId}
               collections={collections}
             />

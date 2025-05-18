@@ -9,6 +9,7 @@ interface BookmarkGridProps {
   onBookmarksReordered: (bookmarks: Bookmark[]) => void;
   onTagClick: (tag: string) => void;
   onDeleteBookmark: (id: string) => void;
+  onUpdateBookmark: (id: string, updates: Partial<Bookmark>) => void;
   selectedCollectionId: string | null;
   collections: Collection[];
 }
@@ -18,6 +19,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   onBookmarksReordered,
   onTagClick,
   onDeleteBookmark,
+  onUpdateBookmark,
   selectedCollectionId,
   collections,
 }) => {
@@ -205,6 +207,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
             bookmark={bookmark}
             onTagClick={onTagClick}
             onDelete={onDeleteBookmark}
+            onUpdate={onUpdateBookmark}
           />
         </div>
       ))}

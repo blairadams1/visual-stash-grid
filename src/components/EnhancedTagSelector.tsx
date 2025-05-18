@@ -2,36 +2,11 @@
 import React, { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { useTags } from "@/hooks/useTags";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Bookmark } from "@/lib/bookmarkUtils";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger
-} from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
+import { Search, X } from "lucide-react";
 
 interface EnhancedTagSelectorProps {
   selectedTags: string[];
@@ -47,393 +22,170 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
   onClearAllTags,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const { tags, categories, addTag, addCategory } = useTags();
-  const [newTagName, setNewTagName] = useState("");
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryColor, setNewCategoryColor] = useState("#9b87f5");
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
-  const { toast } = useToast();
-  // Get bookmarks to calculate popular tags
+  const [activeTab, setActiveTab] = useState("all");
+  const [newTag, setNewTag] = useState("");
   const [bookmarks] = useLocalStorage<Bookmark[]>("bookmarks", []);
 
-  // Get unique tag names from all tags (for backward compatibility)
-  const allTagNames = useMemo(() => {
-    const tagNames = new Set<string>();
-    
-    // First, add tags from the tags array
-    tags.forEach(tag => tagNames.add(tag.name));
-    
-    // Then, add any other tags that might be referenced only by name
-    selectedTags.forEach(tag => tagNames.add(tag));
-    
-    // Also add tags from bookmarks
-    bookmarks.forEach(bookmark => {
-      bookmark.tags.forEach(tag => tagNames.add(tag));
-    });
-    
-    return Array.from(tagNames).sort();
-  }, [tags, selectedTags, bookmarks]);
-
-  const filteredTags = allTagNames.filter((tag) =>
-    tag.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  // Calculate popular tags based on frequency in bookmarks
-  const popularTags = useMemo(() => {
+  // Get all unique tags from bookmarks
+  const allTags = useMemo(() => {
     return Array.from(
       new Set(bookmarks.flatMap((bookmark) => bookmark.tags))
-    )
-      .sort((a, b) => {
-        // Count occurrences of each tag
-        const countA = bookmarks.filter(bm => bm.tags.includes(a)).length;
-        const countB = bookmarks.filter(bm => bm.tags.includes(b)).length;
-        return countB - countA; // Sort by frequency, descending
-      })
-      .filter(tag => !selectedTags.includes(tag))
-      .slice(0, 15); // Get top 15
+    ).sort();
+  }, [bookmarks]);
+
+  // Filter tags by search query
+  const filteredTags = useMemo(() => {
+    if (!searchQuery.trim()) return allTags;
+    
+    return allTags.filter((tag) =>
+      tag.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [allTags, searchQuery]);
+
+  // Calculate popular tags based on frequency
+  const popularTags = useMemo(() => {
+    const tagCounts = new Map<string, number>();
+    
+    bookmarks.forEach(bookmark => {
+      bookmark.tags.forEach(tag => {
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      });
+    });
+    
+    return [...tagCounts.entries()]
+      .sort((a, b) => b[1] - a[1]) // Sort by count, descending
+      .filter(([tag]) => !selectedTags.includes(tag))
+      .slice(0, 15) // Get top 15 popular tags
+      .map(([tag]) => tag);
   }, [bookmarks, selectedTags]);
 
-  // Handle adding a new tag
+  // Handle adding a custom tag
   const handleAddTag = () => {
-    if (!newTagName.trim()) {
-      toast({
-        title: "Tag name cannot be empty",
-        variant: "destructive"
-      });
+    if (!newTag.trim() || selectedTags.includes(newTag.trim())) {
       return;
     }
-
-    addTag(newTagName, selectedCategoryId);
-    setNewTagName("");
-    toast({
-      title: `Tag '${newTagName}' created`
-    });
+    
+    onTagSelect(newTag.trim());
+    setNewTag("");
   };
-
-  // Handle adding a new category
-  const handleAddCategory = () => {
-    if (!newCategoryName.trim()) {
-      toast({
-        title: "Category name cannot be empty",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    addCategory(newCategoryName, newCategoryColor);
-    setNewCategoryName("");
-    toast({
-      title: `Category '${newCategoryName}' created`
-    });
-  };
-
-  // Group tags by category for the categories view
-  const tagsByCategory = useMemo(() => {
-    const grouped: Record<string, { categoryName: string, color: string, tags: string[] }> = {};
-    
-    // Initialize with categories
-    categories.forEach(category => {
-      grouped[category.id] = { 
-        categoryName: category.name, 
-        color: category.color,
-        tags: []
-      };
-    });
-
-    // Add uncategorized group
-    grouped['uncategorized'] = { 
-      categoryName: 'Uncategorized', 
-      color: '#9F9EA1', // Medium gray
-      tags: []
-    };
-    
-    // Assign tags to categories
-    tags.forEach(tag => {
-      const categoryId = tag.categoryId || 'uncategorized';
-      if (grouped[categoryId]) {
-        grouped[categoryId].tags.push(tag.name);
-      } else {
-        grouped['uncategorized'].tags.push(tag.name);
-      }
-    });
-    
-    // Add any tags that exist only by name to uncategorized
-    allTagNames.forEach(tagName => {
-      const exists = tags.some(t => t.name === tagName);
-      if (!exists) {
-        grouped['uncategorized'].tags.push(tagName);
-      }
-    });
-    
-    return Object.values(grouped);
-  }, [tags, categories, allTagNames]);
 
   return (
-    <div className="space-y-3">
-      <Tabs defaultValue="all">
-        <TabsList className="w-full mb-2">
-          <TabsTrigger value="all" className="flex-1">All Tags</TabsTrigger>
-          <TabsTrigger value="categories" className="flex-1">Categories</TabsTrigger>
-          <TabsTrigger value="manage" className="flex-1">Manage</TabsTrigger>
-        </TabsList>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Filter by Tags</h3>
+        {selectedTags.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClearAllTags}
+            className="h-8 px-2"
+          >
+            Clear All
+          </Button>
+        )}
+      </div>
 
-        {/* All Tags View */}
-        <TabsContent value="all" className="mt-0">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-medium">Filter by Tags</h2>
-            {selectedTags.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClearAllTags}
-                className="text-xs text-gray-500 hover:text-gray-700"
-              >
-                Clear All
-              </Button>
-            )}
-          </div>
-          
-          {/* Search input */}
-          <div className="relative mb-3">
-            <Input
-              type="text"
-              placeholder="Search tags..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          
-          {/* Selected tags */}
-          {selectedTags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {selectedTags.map((tag) => (
+      {/* Selected tags */}
+      {selectedTags.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {selectedTags.map((tag) => (
+            <Badge
+              key={tag}
+              className="bg-bookmark-blue hover:bg-bookmark-darkBlue text-white px-3 py-1 flex items-center gap-1 cursor-pointer"
+              onClick={() => onTagDeselect(tag)}
+            >
+              {tag}
+              <X className="h-3 w-3" />
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Search input */}
+      <div className="relative">
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Search tags..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-8"
+        />
+      </div>
+
+      {/* Add custom tag */}
+      <div className="flex items-center space-x-2">
+        <Input
+          placeholder="Add custom tag..."
+          value={newTag}
+          onChange={(e) => setNewTag(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleAddTag();
+            }
+          }}
+        />
+        <Button 
+          onClick={handleAddTag} 
+          disabled={!newTag.trim() || selectedTags.includes(newTag.trim())}
+        >
+          Add
+        </Button>
+      </div>
+
+      {/* Tags tabs */}
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="all">All Tags</TabsTrigger>
+          <TabsTrigger value="popular">Popular Tags</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="all" className="mt-4">
+          <div className="flex flex-wrap gap-1 max-h-64 overflow-y-auto">
+            {filteredTags.length > 0 ? (
+              filteredTags.map((tag) => (
                 <Badge
                   key={tag}
-                  className="bg-bookmark-blue text-white px-3 cursor-pointer hover:bg-bookmark-darkBlue"
-                  onClick={() => onTagDeselect(tag)}
+                  variant={selectedTags.includes(tag) ? "default" : "outline"}
+                  className={`cursor-pointer ${
+                    selectedTags.includes(tag)
+                      ? "bg-bookmark-blue hover:bg-bookmark-darkBlue text-white"
+                      : "border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-softBlue"
+                  }`}
+                  onClick={() =>
+                    selectedTags.includes(tag)
+                      ? onTagDeselect(tag)
+                      : onTagSelect(tag)
+                  }
                 >
-                  {tag} ×
+                  {tag}
                 </Badge>
-              ))}
-            </div>
-          )}
-          
-          {/* Popular tags section */}
-          {popularTags.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-medium mb-2 text-gray-600">Popular Tags</h3>
-              <div className="flex flex-wrap gap-2">
-                {popularTags.map((tag) => (
-                  <Button
-                    key={tag}
-                    variant="outline"
-                    size="sm"
-                    className="bg-gray-50 border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-softBlue hover:text-bookmark-darkBlue"
-                    onClick={() => onTagSelect(tag)}
-                  >
-                    {tag}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Available tags */}
-          <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-            {filteredTags
-              .filter((tag) => !selectedTags.includes(tag) && !popularTags.includes(tag))
-              .map((tag) => {
-                // Find the tag object to get its category and color
-                const tagObj = tags.find(t => t.name === tag);
-                const categoryId = tagObj?.categoryId;
-                const category = categories.find(c => c.id === categoryId);
-                const tagColor = tagObj?.color || category?.color;
-                
-                return (
-                  <Badge
-                    key={tag}
-                    variant="outline"
-                    className={cn(
-                      "cursor-pointer border-bookmark-blue hover:bg-bookmark-softBlue",
-                      tagColor ? "border-opacity-50" : ""
-                    )}
-                    onClick={() => onTagSelect(tag)}
-                    style={tagColor ? { borderColor: tagColor } : undefined}
-                  >
-                    {tag}
-                  </Badge>
-                );
-              })}
+              ))
+            ) : (
+              <p className="text-sm text-gray-500 w-full text-center py-4">
+                No tags found matching your search.
+              </p>
+            )}
           </div>
         </TabsContent>
-
-        {/* Categories View */}
-        <TabsContent value="categories" className="mt-0">
-          <div className="space-y-4">
-            {tagsByCategory.map((category, index) => (
-              category.tags.length > 0 && (
-                <div key={index} className="space-y-2">
-                  <h3 
-                    className="text-sm font-medium flex items-center"
-                    style={{ color: category.color }}
-                  >
-                    <span 
-                      className="inline-block w-3 h-3 rounded-full mr-2"
-                      style={{ backgroundColor: category.color }}
-                    />
-                    {category.categoryName}
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {category.tags
-                      .filter(tagName => !searchQuery || tagName.toLowerCase().includes(searchQuery.toLowerCase()))
-                      .map((tagName) => (
-                        <Badge
-                          key={tagName}
-                          variant={selectedTags.includes(tagName) ? "default" : "outline"}
-                          className={cn(
-                            "cursor-pointer",
-                            selectedTags.includes(tagName) 
-                              ? "bg-bookmark-blue text-white hover:bg-bookmark-darkBlue" 
-                              : "hover:bg-bookmark-softBlue"
-                          )}
-                          style={selectedTags.includes(tagName) ? undefined : { borderColor: category.color }}
-                          onClick={() => selectedTags.includes(tagName) 
-                            ? onTagDeselect(tagName) 
-                            : onTagSelect(tagName)
-                          }
-                        >
-                          {tagName}
-                          {selectedTags.includes(tagName) && " ×"}
-                        </Badge>
-                      ))
-                    }
-                  </div>
-                </div>
-              )
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Manage Tags View */}
-        <TabsContent value="manage" className="mt-0">
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium mb-2">Add New Tag</h3>
-              <div className="flex space-x-2">
-                <Input 
-                  placeholder="Tag name"
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  className="flex-1"
-                />
-                <Select 
-                  value={selectedCategoryId || 'none'} 
-                  onValueChange={(value) => setSelectedCategoryId(value === 'none' ? undefined : value)}
+        
+        <TabsContent value="popular" className="mt-4">
+          <div className="flex flex-wrap gap-1">
+            {popularTags.length > 0 ? (
+              popularTags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="outline"
+                  className="cursor-pointer border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-softBlue"
+                  onClick={() => onTagSelect(tag)}
                 >
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Category</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button 
-                  onClick={handleAddTag}
-                  className="bg-bookmark-blue hover:bg-bookmark-darkBlue"
-                >
-                  Add
-                </Button>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium mb-2">Add New Category</h3>
-              <div className="flex space-x-2">
-                <Input 
-                  placeholder="Category name"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  className="flex-1"
-                />
-                <div className="flex items-center space-x-2">
-                  <Input 
-                    type="color"
-                    value={newCategoryColor}
-                    onChange={(e) => setNewCategoryColor(e.target.value)}
-                    className="w-12 h-9 p-1"
-                  />
-                </div>
-                <Button 
-                  onClick={handleAddCategory}
-                  className="bg-bookmark-purple hover:bg-bookmark-darkPurple"
-                >
-                  Add
-                </Button>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium mb-2">Manage Categories</h3>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {categories.map((category) => (
-                  <div 
-                    key={category.id}
-                    className="flex items-center justify-between p-2 rounded border"
-                    style={{ borderColor: category.color }}
-                  >
-                    <div className="flex items-center">
-                      <div 
-                        className="w-4 h-4 rounded-full mr-2"
-                        style={{ backgroundColor: category.color }}
-                      />
-                      <span>{category.name}</span>
-                    </div>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm">Edit</Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit Category</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label>Name</Label>
-                            <Input defaultValue={category.name} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Color</Label>
-                            <div className="flex items-center space-x-2">
-                              <Input 
-                                type="color"
-                                defaultValue={category.color}
-                                className="w-20"
-                              />
-                              <div 
-                                className="w-8 h-8 rounded-md border"
-                                style={{ backgroundColor: category.color }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <DialogClose asChild>
-                            <Button variant="outline">Cancel</Button>
-                          </DialogClose>
-                          <Button>Save Changes</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                ))}
-              </div>
-            </div>
+                  {tag}
+                </Badge>
+              ))
+            ) : (
+              <p className="text-sm text-gray-500 w-full text-center py-4">
+                No more popular tags available.
+              </p>
+            )}
           </div>
         </TabsContent>
       </Tabs>
