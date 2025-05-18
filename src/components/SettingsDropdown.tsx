@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Settings, Download, Upload, BookmarkPlus, Palette, Layout, Moon, Sun, FileText } from 'lucide-react';
+import { Settings, Palette, Layout, Moon, Sun, FileText } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
   DropdownMenu,
@@ -22,9 +22,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTabs,
+  DialogTab,
+  DialogTabContent,
+  DialogTabList,
+  DialogTabTrigger,
 } from "@/components/ui/dialog";
 import BookmarkletInstall from './BookmarkletInstall';
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SettingsDropdownProps {
   bookmarks: any[];
@@ -45,9 +51,7 @@ const SettingsDropdown = ({
   currentTheme,
   currentCardSize 
 }: SettingsDropdownProps) => {
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importHtmlDialogOpen, setImportHtmlDialogOpen] = useState(false);
-  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
   const [bookmarkletDialogOpen, setBookmarkletDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importHtmlFile, setImportHtmlFile] = useState<File | null>(null);
@@ -76,7 +80,6 @@ const SettingsDropdown = ({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      setExportDialogOpen(false);
       toast({
         title: "Export successful",
         description: "Your bookmarks have been exported successfully",
@@ -115,7 +118,7 @@ const SettingsDropdown = ({
         // Store the imported bookmarks in localStorage
         localStorage.setItem("bookmarks", JSON.stringify(importedData));
         
-        setImportDialogOpen(false);
+        setImportExportDialogOpen(false);
         setImportFile(null);
         
         toast({
@@ -204,7 +207,7 @@ const SettingsDropdown = ({
         // Save all bookmarks back to localStorage
         localStorage.setItem("bookmarks", JSON.stringify(newBookmarks));
         
-        setImportHtmlDialogOpen(false);
+        setImportExportDialogOpen(false);
         setImportHtmlFile(null);
         
         toast({
@@ -367,136 +370,110 @@ const SettingsDropdown = ({
           
           <DropdownMenuSeparator />
           
-          <DropdownMenuItem onClick={() => setImportDialogOpen(true)}>
-            <Upload className="mr-2 h-4 w-4" />
-            Import JSON Bookmarks
-          </DropdownMenuItem>
-          
-          <DropdownMenuItem onClick={() => setImportHtmlDialogOpen(true)}>
-            <Upload className="mr-2 h-4 w-4" />
-            Import HTML Bookmarks
-          </DropdownMenuItem>
-          
-          <DropdownMenuItem onClick={() => setExportDialogOpen(true)}>
-            <Download className="mr-2 h-4 w-4" />
-            Export JSON Bookmarks
-          </DropdownMenuItem>
-          
-          <DropdownMenuItem onClick={handleExportHtmlBookmarks}>
-            <Download className="mr-2 h-4 w-4" />
-            Export HTML Bookmarks
+          <DropdownMenuItem onClick={() => setImportExportDialogOpen(true)}>
+            <FileText className="mr-2 h-4 w-4" />
+            Import/Export
           </DropdownMenuItem>
           
           <DropdownMenuSeparator />
           
           <DropdownMenuItem onClick={() => setBookmarkletDialogOpen(true)}>
-            <BookmarkPlus className="mr-2 h-4 w-4" />
+            <FileText className="mr-2 h-4 w-4" />
             Install Bookmarklet
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Import Dialog */}
-      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+      {/* Import/Export Dialog */}
+      <Dialog open={importExportDialogOpen} onOpenChange={setImportExportDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Import Bookmarks</DialogTitle>
+            <DialogTitle>Import/Export Bookmarks</DialogTitle>
             <DialogDescription>
-              Upload a JSON file containing your bookmarks
+              Import or export your bookmarks in different formats
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4">
-            <input
-              type="file"
-              accept=".json"
-              onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium"
-            />
-          </div>
+          <Tabs defaultValue="import" className="w-full">
+            <TabsList className="grid grid-cols-2">
+              <TabsTrigger value="import">Import</TabsTrigger>
+              <TabsTrigger value="export">Export</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="import" className="space-y-4 py-4">
+              <Tabs defaultValue="json" className="w-full">
+                <TabsList className="grid grid-cols-2">
+                  <TabsTrigger value="json">JSON</TabsTrigger>
+                  <TabsTrigger value="html">HTML</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="json" className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-500">
+                      Upload a JSON file containing your bookmarks
+                    </p>
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button onClick={handleImportBookmarks}>
+                      Import JSON
+                    </Button>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="html" className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-500">
+                      Upload an HTML bookmarks file exported from another browser
+                    </p>
+                    <input
+                      type="file"
+                      accept=".html,.htm"
+                      onChange={(e) => setImportHtmlFile(e.target.files?.[0] || null)}
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button onClick={handleImportHtmlBookmarks}>
+                      Import HTML
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </TabsContent>
+            
+            <TabsContent value="export" className="space-y-4 py-4">
+              <div className="space-y-2">
+                <p className="text-sm text-gray-500">
+                  You are about to export {bookmarks.length} bookmarks.
+                </p>
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={handleExportHtmlBookmarks}>
+                  Export as HTML
+                </Button>
+                <Button onClick={handleExportBookmarks}>
+                  Export as JSON
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
           
-          <DialogFooter>
+          <DialogFooter className="sm:justify-start">
             <Button
               type="button"
               variant="secondary"
-              onClick={() => setImportDialogOpen(false)}
+              onClick={() => setImportExportDialogOpen(false)}
             >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleImportBookmarks}
-            >
-              Import
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Import HTML Dialog */}
-      <Dialog open={importHtmlDialogOpen} onOpenChange={setImportHtmlDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Import HTML Bookmarks</DialogTitle>
-            <DialogDescription>
-              Upload an HTML bookmarks file exported from another browser
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            <input
-              type="file"
-              accept=".html,.htm"
-              onChange={(e) => setImportHtmlFile(e.target.files?.[0] || null)}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium"
-            />
-          </div>
-          
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setImportHtmlDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleImportHtmlBookmarks}
-            >
-              Import
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Export Dialog */}
-      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Export Bookmarks</DialogTitle>
-            <DialogDescription>
-              Download your bookmarks as a JSON file
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            <p>You are about to export {bookmarks.length} bookmarks.</p>
-          </div>
-          
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setExportDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleExportBookmarks}
-            >
-              Export
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -186,9 +186,23 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
 
   // Get filtered bookmarks based on selected collection
   const filteredBookmarks = getFilteredBookmarks();
+  
+  // Determine column count based on card size
+  const getColumnClasses = () => {
+    if (layout === 'list') return 'grid-cols-1';
+    
+    switch (cardSize) {
+      case 'small':
+        return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7';
+      case 'large':
+        return 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3';
+      default: // medium
+        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5';
+    }
+  };
 
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 px-0 mx-0 ${layout === 'list' ? 'bookmark-grid-list' : layout === 'compact' ? 'bookmark-grid-compact' : ''}`}>
+    <div className={`grid gap-4 px-0 mx-0 ${getColumnClasses()} ${layout === 'list' ? 'bookmark-grid-list' : layout === 'compact' ? 'bookmark-grid-compact' : ''}`}>
       {filteredBookmarks.map((bookmark, index) => (
         <div
           key={bookmark.id}
