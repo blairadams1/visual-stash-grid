@@ -72,14 +72,8 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     collections
   );
 
-  // Get drag and drop handlers
-  const { 
-    handleDragStart, 
-    handleDragOver, 
-    handleDragEnd: baseDragEnd, 
-    handleDrop, 
-    handleDragLeave 
-  } = DragDropHandler({
+  // Get drag and drop handlers - using the modified DragDropHandler
+  const dragDropHandlers = DragDropHandler({
     onBookmarksReordered,
     onMoveToFolder,
     bookmarks,
@@ -91,22 +85,33 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     setDraggedOverFolder
   });
 
+  // Extract the handlers from the returned object
+  const { 
+    handleDragStart, 
+    handleDragOver, 
+    handleDragEnd: baseDragEnd, 
+    handleDrop, 
+    handleDragLeave 
+  } = dragDropHandlers;
+
   // Wrap handleDragEnd to provide getFilteredItems
   const handleDragEnd = (event: React.DragEvent) => {
     baseDragEnd(event, getFilteredItems);
   };
 
   // Get touch handlers if on mobile
-  const {
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd
-  } = TouchHandler({
+  const touchHandlers = TouchHandler({
     onBookmarksReordered,
     onMoveToFolder,
     bookmarks,
     getFilteredItems
   });
+
+  const {
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd
+  } = touchHandlers;
 
   // Get filtered bookmarks and folders
   const { bookmarks: filteredBookmarks, folders: filteredFolders } = getFilteredItems();

@@ -1,5 +1,5 @@
 
-import { useState, Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 import { Bookmark } from "@/lib/bookmarkUtils";
 import { DraggedItem, DropIndicator } from "./DragDropHandler";
 
@@ -157,9 +157,6 @@ export const TouchHandler = ({
   };
 
   return {
-    touchStartPos,
-    touchCurrentPos,
-    touchOverFolder,
     handleTouchStart,
     handleTouchMove,
     handleTouchEnd

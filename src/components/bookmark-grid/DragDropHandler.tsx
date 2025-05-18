@@ -52,7 +52,8 @@ export const useDragDrop = () => {
   };
 };
 
-export const DragDropHandler: React.FC<DragDropHandlerProps> = ({
+// Changed from FC<DragDropHandlerProps> to a simple function that returns handlers
+export const DragDropHandler = ({
   onBookmarksReordered,
   onMoveToFolder,
   bookmarks,
@@ -62,7 +63,7 @@ export const DragDropHandler: React.FC<DragDropHandlerProps> = ({
   setDropIndicator,
   draggedOverFolder,
   setDraggedOverFolder,
-}) => {
+}: DragDropHandlerProps) => {
   // Function to handle drag start for bookmarks and folders
   const handleDragStart = (index: number, event: React.DragEvent, type: 'bookmark' | 'folder') => {
     event.stopPropagation();
