@@ -48,19 +48,32 @@ const FolderCard: React.FC<FolderCardProps> = ({
             <img
               src="/lovable-uploads/ee3d1214-9131-4ec4-9312-ddc55b3b8d6f.png"
               alt={folder.name}
-              className="w-full h-[85%] object-contain mt-2" // Scaled down to fit inside the card
+              className="w-full h-[70%] object-contain mt-2" // Scaled down to better fit inside the card
             />
           </AspectRatio>
           
-          {/* Folder name at top - adjusted position up by 12% */}
-          <div className="absolute left-[6%] top-[6%] z-10">
+          {/* Folder name at top with increased left padding */}
+          <div className="absolute left-[12%] top-[6%] z-10">
             <span className="text-sm font-medium truncate text-amber-800 dark:text-amber-200">
               {folder.name}
             </span>
           </div>
           
-          {/* Edit buttons - moved closer to the bottom (from 25% to 10% from bottom) */}
-          <div className="absolute bottom-[10%] right-[6%] z-10 flex space-x-3">
+          {/* Action buttons - rearranged with trash first */}
+          <div className="absolute bottom-[3%] right-[6%] z-10 flex space-x-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm("Are you sure you want to delete this folder?")) {
+                  onDelete(folder.id);
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
               <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogTrigger asChild>
@@ -82,26 +95,13 @@ const FolderCard: React.FC<FolderCardProps> = ({
                 </DialogContent>
               </Dialog>
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (confirm("Are you sure you want to delete this folder?")) {
-                  onDelete(folder.id);
-                }
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </CardContent>
       
       {/* Tags moved inside the aspect ratio container and positioned closer to bottom */}
       {folder.tags && folder.tags.length > 0 && (
-        <div className="absolute bottom-[2%] left-[6%] right-[6%] z-10">
+        <div className="absolute bottom-[2%] left-[12%] right-[6%] z-10">
           <div className="flex items-center gap-1 flex-wrap">
             <Tag className="h-3 w-3 text-gray-500" />
             {folder.tags.map((tag) => (
