@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Edit, Tag } from "lucide-react";
@@ -59,8 +59,8 @@ const FolderCard: React.FC<FolderCardProps> = ({
             </span>
           </div>
           
-          {/* Edit buttons positioned higher up */}
-          <div className="absolute bottom-[12%] right-[6%] z-10 flex space-x-3">
+          {/* Edit buttons positioned higher up - moved up more */}
+          <div className="absolute bottom-[25%] right-[6%] z-10 flex space-x-3">
             <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
               <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogTrigger asChild>
@@ -99,9 +99,10 @@ const FolderCard: React.FC<FolderCardProps> = ({
         </div>
       </CardContent>
       
+      {/* Tags moved inside the aspect ratio container to avoid whitespace at bottom */}
       {folder.tags && folder.tags.length > 0 && (
-        <CardFooter className="p-2 pt-0 pb-1 flex flex-wrap gap-1">
-          <div className="flex items-center gap-1 w-full">
+        <div className="absolute bottom-[5%] left-[6%] right-[6%] z-10">
+          <div className="flex items-center gap-1 flex-wrap">
             <Tag className="h-3 w-3 text-gray-500" />
             {folder.tags.map((tag) => (
               <Badge
@@ -117,7 +118,7 @@ const FolderCard: React.FC<FolderCardProps> = ({
               </Badge>
             ))}
           </div>
-        </CardFooter>
+        </div>
       )}
     </Card>
   );
