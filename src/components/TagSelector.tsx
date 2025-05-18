@@ -1,129 +1,80 @@
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useState } from "react";
+import React, { useState } from 'react';
 import { Input } from "@/components/ui/input";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { Bookmark } from "@/lib/bookmarkUtils";
-import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Plus, X } from "lucide-react";
 
 interface TagSelectorProps {
-  availableTags: string[];
   selectedTags: string[];
   onTagSelect: (tag: string) => void;
-  onTagDeselect: (tag: string) => void;
-  onClearAllTags: () => void;
+  onTagRemove: (tag: string) => void;
+  placeholder?: string;
 }
 
 const TagSelector: React.FC<TagSelectorProps> = ({
-  availableTags,
   selectedTags,
   onTagSelect,
-  onTagDeselect,
-  onClearAllTags,
+  onTagRemove,
+  placeholder = "Add tag..."
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  // Get bookmarks to calculate popular tags
-  const [bookmarks] = useLocalStorage<Bookmark[]>("bookmarks", []);
+  const [tagInput, setTagInput] = useState<string>("");
   
-  const filteredTags = availableTags.filter((tag) =>
-    tag.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  // Calculate popular tags based on frequency in bookmarks
-  const popularTags = Array.from(
-    new Set(bookmarks.flatMap((bookmark) => bookmark.tags))
-  )
-    .sort((a, b) => {
-      // Count occurrences of each tag
-      const countA = bookmarks.filter(bm => bm.tags.includes(a)).length;
-      const countB = bookmarks.filter(bm => bm.tags.includes(b)).length;
-      return countB - countA; // Sort by frequency, descending
-    })
-    .filter(tag => !selectedTags.includes(tag))
-    .slice(0, 15); // Get top 15
+  const handleAddTag = () => {
+    const tag = tagInput.trim();
+    if (tag && !selectedTags.includes(tag)) {
+      onTagSelect(tag);
+      setTagInput("");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-medium">Filter by Tags</h2>
-        {selectedTags.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClearAllTags}
-            className="text-xs text-gray-500 hover:text-gray-700"
-          >
-            Clear All
-          </Button>
-        )}
-      </div>
-      
-      {/* Search input */}
-      <div className="relative">
+    <div className="space-y-2">
+      <div className="flex space-x-2">
         <Input
-          type="text"
-          placeholder="Search tags..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full mb-2"
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className="flex-1"
         />
+        <Button
+          type="button"
+          onClick={handleAddTag}
+          variant="outline"
+          disabled={!tagInput.trim() || selectedTags.includes(tagInput.trim())}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
       </div>
       
-      {/* Selected tags */}
       {selectedTags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-3">
+        <div className="flex flex-wrap gap-2 mt-2">
           {selectedTags.map((tag) => (
             <Badge
               key={tag}
-              className="bg-bookmark-blue text-white px-3 cursor-pointer hover:bg-bookmark-darkBlue flex items-center gap-1"
-              onClick={() => onTagDeselect(tag)}
+              variant="secondary"
+              className="flex items-center gap-1 px-2 py-1"
             >
               {tag}
-              <X className="h-3 w-3" />
-            </Badge>
-          ))}
-        </div>
-      )}
-      
-      {/* Popular tags section */}
-      {popularTags.length > 0 && (
-        <div className="mb-4">
-          <h3 className="text-sm font-medium mb-2 text-gray-600">Popular Tags</h3>
-          <div className="flex flex-wrap gap-2">
-            {popularTags.map((tag) => (
-              <Button
-                key={tag}
-                variant="outline"
-                size="sm"
-                className="bg-gray-50 border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-softBlue hover:text-bookmark-darkBlue"
-                onClick={() => onTagSelect(tag)}
+              <button
+                onClick={() => onTagRemove(tag)}
+                className="hover:text-red-500 focus:outline-none"
+                aria-label={`Remove ${tag} tag`}
               >
-                {tag}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Available tags */}
-      <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-        {filteredTags
-          .filter((tag) => !selectedTags.includes(tag) && !popularTags.includes(tag))
-          .map((tag) => (
-            <Badge
-              key={tag}
-              variant="outline"
-              className={cn(
-                "cursor-pointer border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-softBlue"
-              )}
-              onClick={() => onTagSelect(tag)}
-            >
-              {tag}
+                <X className="h-3 w-3" />
+              </button>
             </Badge>
           ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

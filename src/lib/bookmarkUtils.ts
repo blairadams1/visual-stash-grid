@@ -11,6 +11,17 @@ export interface Bookmark {
   notes?: string;
   collectionId?: string;
   createdAt?: Date;
+  folderId?: string; // New property to indicate if bookmark is in a folder
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  image: string;
+  tags: string[];
+  order: number;
+  collectionId?: string;
+  createdAt?: Date;
 }
 
 export interface Collection {
@@ -64,7 +75,8 @@ export const createBookmark = (
   existingBookmarks: Bookmark[] = [],
   collectionId?: string,
   thumbnail?: string,
-  notes?: string
+  notes?: string,
+  folderId?: string
 ): Bookmark => {
   // Find the highest order from existing bookmarks
   const highestOrder = existingBookmarks.length > 0
@@ -82,6 +94,33 @@ export const createBookmark = (
     tags,
     order: highestOrder + 1,
     notes,
+    collectionId,
+    createdAt: new Date(),
+    folderId,
+  };
+};
+
+export const createFolder = (
+  name: string,
+  existingItems: (Bookmark | Folder)[] = [],
+  image?: string,
+  tags: string[] = [],
+  collectionId?: string
+): Folder => {
+  // Find the highest order from existing items
+  const highestOrder = existingItems.length > 0
+    ? Math.max(...existingItems.map(item => item.order))
+    : 0;
+
+  // Use default folder image if none provided
+  const defaultImage = image || '/lovable-uploads/80ac03c8-9e22-4604-a202-1c5c73c568eb.png';
+  
+  return {
+    id: uuidv4(),
+    name,
+    image: defaultImage,
+    tags,
+    order: highestOrder + 1,
     collectionId,
     createdAt: new Date(),
   };

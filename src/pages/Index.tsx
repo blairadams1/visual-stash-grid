@@ -1,31 +1,44 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import BookmarkForm from "@/components/BookmarkForm";
 import BookmarkGrid from "@/components/BookmarkGrid";
 import EnhancedTagSelector from "@/components/EnhancedTagSelector";
-import { Bookmark } from "@/lib/bookmarkUtils";
+import { Bookmark, Folder, createFolder } from "@/lib/bookmarkUtils";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
-import { Filter, Plus, RefreshCw } from 'lucide-react';
+import { Filter, Plus, RefreshCw, FolderPlus, MoveLeft } from 'lucide-react';
 import { 
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogHeader,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import FolderForm from "@/components/FolderForm";
 import SettingsDropdown from "@/components/SettingsDropdown";
 
 const Index = () => {
-  // State for bookmarks from local storage
+  // State for bookmarks and folders from local storage
   const [bookmarks, setBookmarks] = useLocalStorage<Bookmark[]>("bookmarks", []);
+  const [folders, setFolders] = useLocalStorage<Folder[]>("folders", []);
   
   // State for search and filtering
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [showFolderForm, setShowFolderForm] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
   
   // Presentation settings
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
@@ -42,11 +55,26 @@ const Index = () => {
     }
   }, [theme]);
 
+  // Update current folder when ID changes
+  useEffect(() => {
+    if (currentFolderId) {
+      const folder = folders.find(f => f.id === currentFolderId);
+      setCurrentFolder(folder || null);
+    } else {
+      setCurrentFolder(null);
+    }
+  }, [currentFolderId, folders]);
+
   // Force refresh bookmarks from local storage
   useEffect(() => {
     const storedBookmarks = localStorage.getItem("bookmarks");
     if (storedBookmarks) {
       setBookmarks(JSON.parse(storedBookmarks));
+    }
+    
+    const storedFolders = localStorage.getItem("folders");
+    if (storedFolders) {
+      setFolders(JSON.parse(storedFolders));
     }
   }, []);
 
@@ -55,15 +83,41 @@ const Index = () => {
     const storedBookmarks = localStorage.getItem("bookmarks");
     if (storedBookmarks) {
       setBookmarks(JSON.parse(storedBookmarks));
-      toast({
-        title: "Bookmarks refreshed",
-      });
     }
+    
+    const storedFolders = localStorage.getItem("folders");
+    if (storedFolders) {
+      setFolders(JSON.parse(storedFolders));
+    }
+    
+    toast({
+      title: "Content refreshed",
+    });
   };
 
   // Handle adding a new bookmark
   const handleAddBookmark = (bookmark: Bookmark) => {
+    // Add current folder ID if we're inside a folder
+    if (currentFolderId) {
+      bookmark.folderId = currentFolderId;
+    }
     setBookmarks([...bookmarks, bookmark]);
+  };
+
+  // Handle adding a new folder
+  const handleAddFolder = (folderData: Partial<Folder>) => {
+    const allItems = [...bookmarks, ...folders];
+    const newFolder = createFolder(
+      folderData.name || "New Folder", 
+      allItems,
+      folderData.image,
+      folderData.tags
+    );
+    setFolders([...folders, newFolder]);
+    toast({
+      title: "Folder created",
+    });
+    setShowFolderForm(false);
   };
 
   // Handle deleting a bookmark
@@ -74,6 +128,22 @@ const Index = () => {
     });
   };
 
+  // Handle deleting a folder
+  const handleDeleteFolder = (id: string) => {
+    // Remove the folder
+    setFolders(folders.filter((folder) => folder.id !== id));
+    
+    // Remove folder ID from bookmarks that were in this folder
+    // (This returns them to the main view)
+    setBookmarks(bookmarks.map(bookmark => 
+      bookmark.folderId === id ? { ...bookmark, folderId: undefined } : bookmark
+    ));
+    
+    toast({
+      title: "Folder deleted",
+    });
+  };
+
   // Handle updating a bookmark
   const handleUpdateBookmark = (id: string, updates: Partial<Bookmark>) => {
     setBookmarks(
@@ -81,6 +151,18 @@ const Index = () => {
         bookmark.id === id ? { ...bookmark, ...updates } : bookmark
       )
     );
+  };
+
+  // Handle updating a folder
+  const handleUpdateFolder = (id: string, updates: Partial<Folder>) => {
+    setFolders(
+      folders.map(folder => 
+        folder.id === id ? { ...folder, ...updates } : folder
+      )
+    );
+    toast({
+      title: "Folder updated",
+    });
   };
 
   // Handle reordering of bookmarks
@@ -103,24 +185,22 @@ const Index = () => {
     setSelectedTags([]);
   };
 
-  // Filter bookmarks based on search query and selected tags
-  const filteredBookmarks = bookmarks.filter((bookmark) => {
-    // Filter by search query
-    const matchesQuery =
-      searchQuery === "" ||
-      bookmark.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bookmark.url.toLowerCase().includes(searchQuery.toLowerCase());
+  // Handle opening a folder
+  const handleOpenFolder = (folderId: string) => {
+    setCurrentFolderId(folderId);
+  };
 
-    // Filter by selected tags
-    const matchesTags =
-      selectedTags.length === 0 ||
-      selectedTags.every((tag) => bookmark.tags.includes(tag));
-
-    return matchesQuery && matchesTags;
-  });
-
-  // Sort bookmarks by order
-  const sortedBookmarks = [...filteredBookmarks].sort((a, b) => a.order - b.order);
+  // Handle moving a bookmark to a folder
+  const handleMoveToFolder = (bookmarkId: string, folderId: string) => {
+    setBookmarks(
+      bookmarks.map(bookmark =>
+        bookmark.id === bookmarkId ? { ...bookmark, folderId } : bookmark
+      )
+    );
+    toast({
+      title: "Bookmark moved to folder",
+    });
+  };
 
   // Get current site information for quick bookmarking
   const getCurrentPageInfo = () => {
@@ -158,6 +238,17 @@ const Index = () => {
             </div>
             
             <div className="flex items-center gap-3">
+              {currentFolder && (
+                <Button 
+                  variant="outline"
+                  onClick={() => setCurrentFolderId(null)}
+                  className="flex items-center gap-1"
+                >
+                  <MoveLeft className="h-4 w-4" />
+                  Back
+                </Button>
+              )}
+              
               <Button 
                 onClick={() => setShowForm(!showForm)}
                 className={cn(
@@ -169,6 +260,24 @@ const Index = () => {
               >
                 <Plus className="h-5 w-5" />
               </Button>
+              
+              <Dialog open={showFolderForm} onOpenChange={setShowFolderForm}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowFolderForm(true)}
+                    className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-100 dark:border-amber-800"
+                  >
+                    <FolderPlus className="h-5 w-5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create Folder</DialogTitle>
+                  </DialogHeader>
+                  <FolderForm onSubmit={handleAddFolder} />
+                </DialogContent>
+              </Dialog>
               
               <Button
                 variant="outline"
@@ -235,6 +344,19 @@ const Index = () => {
       </header>
 
       <main className="container max-w-full py-4">
+        {currentFolder && (
+          <div className="px-4 mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <img 
+                src={currentFolder.image} 
+                alt={currentFolder.name}
+                className="w-6 h-6"
+              />
+              {currentFolder.name}
+            </h2>
+          </div>
+        )}
+        
         {/* Bookmark Form */}
         {showForm && (
           <div className="px-4 py-4 bg-white dark:bg-gray-800 mb-6 rounded-lg shadow-sm">
@@ -249,14 +371,20 @@ const Index = () => {
 
         {/* Bookmark Grid */}
         <div className="w-full px-2">
-          {sortedBookmarks.length > 0 ? (
+          {bookmarks.length > 0 || folders.length > 0 ? (
             <BookmarkGrid
-              bookmarks={sortedBookmarks}
+              bookmarks={bookmarks}
+              folders={folders}
               onBookmarksReordered={handleBookmarksReordered}
               onTagClick={handleTagSelect}
               onDeleteBookmark={handleDeleteBookmark}
               onUpdateBookmark={handleUpdateBookmark}
+              onDeleteFolder={handleDeleteFolder}
+              onUpdateFolder={handleUpdateFolder}
+              onOpenFolder={handleOpenFolder}
+              onMoveToFolder={handleMoveToFolder}
               cardSize={cardSize}
+              currentFolderId={currentFolderId}
             />
           ) : (
             <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-8 rounded-lg shadow text-center mx-2`}>
@@ -267,12 +395,22 @@ const Index = () => {
                   : "Try adjusting your search or filter criteria."}
               </p>
               {bookmarks.length === 0 && (
-                <Button 
-                  onClick={() => setShowForm(true)}
-                  className="bg-bookmark-blue hover:bg-bookmark-darkBlue"
-                >
-                  Add Bookmark
-                </Button>
+                <div className="flex justify-center gap-3">
+                  <Button 
+                    onClick={() => setShowForm(true)}
+                    className="bg-bookmark-blue hover:bg-bookmark-darkBlue"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Bookmark
+                  </Button>
+                  <Button 
+                    onClick={() => setShowFolderForm(true)}
+                    className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-100 dark:border-amber-800"
+                  >
+                    <FolderPlus className="h-4 w-4 mr-1" />
+                    Create Folder
+                  </Button>
+                </div>
               )}
             </div>
           )}
