@@ -10,8 +10,10 @@ interface BookmarkGridProps {
   onTagClick: (tag: string) => void;
   onDeleteBookmark: (id: string) => void;
   onUpdateBookmark: (id: string, updates: Partial<Bookmark>) => void;
-  selectedCollectionId: string | null;
-  collections: Collection[];
+  selectedCollectionId?: string | null;
+  collections?: Collection[];
+  layout?: 'grid' | 'list' | 'compact';
+  cardSize?: string;
 }
 
 const BookmarkGrid: React.FC<BookmarkGridProps> = ({
@@ -20,8 +22,10 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   onTagClick,
   onDeleteBookmark,
   onUpdateBookmark,
-  selectedCollectionId,
-  collections,
+  selectedCollectionId = null,
+  collections = [],
+  layout = 'grid',
+  cardSize = 'medium',
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [targetIndex, setTargetIndex] = useState<number | null>(null);
@@ -184,7 +188,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   const filteredBookmarks = getFilteredBookmarks();
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 px-0 mx-0">
+    <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 px-0 mx-0 ${layout === 'list' ? 'bookmark-grid-list' : layout === 'compact' ? 'bookmark-grid-compact' : ''}`}>
       {filteredBookmarks.map((bookmark, index) => (
         <div
           key={bookmark.id}

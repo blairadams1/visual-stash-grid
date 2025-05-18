@@ -54,7 +54,11 @@ export const sendMessage = async (message: ExtensionMessage): Promise<ExtensionR
         // Keep the same ID and order but update other properties
         updatedBookmark.id = existingBookmarks[existingBookmarkIndex].id;
         updatedBookmark.order = existingBookmarks[existingBookmarkIndex].order;
-        updatedBookmark.createdAt = existingBookmarks[existingBookmarkIndex].createdAt;
+        
+        // Handle createdAt date (may not exist in older bookmarks)
+        if (existingBookmarks[existingBookmarkIndex].createdAt) {
+          updatedBookmark.createdAt = existingBookmarks[existingBookmarkIndex].createdAt;
+        }
         
         // Replace the existing bookmark
         existingBookmarks[existingBookmarkIndex] = updatedBookmark;
