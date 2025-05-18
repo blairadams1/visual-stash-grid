@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Settings, Palette, Layout, Moon, Sun, FileText } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
@@ -22,11 +21,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTabs,
-  DialogTab,
-  DialogTabContent,
-  DialogTabList,
-  DialogTabTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import BookmarkletInstall from './BookmarkletInstall';
 import { useLocalStorage } from "@/hooks/useLocalStorage";
