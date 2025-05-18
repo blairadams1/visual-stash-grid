@@ -25,12 +25,26 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
   const [activeTab, setActiveTab] = useState("all");
   const [bookmarks] = useLocalStorage<Bookmark[]>("bookmarks", []);
 
-  // Get all unique tags from bookmarks
-  const allTags = useMemo(() => {
-    return Array.from(
-      new Set(bookmarks.flatMap((bookmark) => bookmark.tags))
-    ).sort();
+  // Get all unique tags from bookmarks and calculate popularity
+  const tagCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    
+    bookmarks.forEach(bookmark => {
+      if (bookmark.tags) {
+        bookmark.tags.forEach(tag => {
+          counts.set(tag, (counts.get(tag) || 0) + 1);
+        });
+      }
+    });
+    
+    return counts;
   }, [bookmarks]);
+
+  // Get all unique tags sorted by popularity
+  const allTags = useMemo(() => {
+    return Array.from(tagCounts.keys())
+      .sort((a, b) => (tagCounts.get(b) || 0) - (tagCounts.get(a) || 0));
+  }, [tagCounts]);
 
   // Filter tags by search query
   const filteredTags = useMemo(() => {
@@ -43,20 +57,12 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
 
   // Calculate popular tags based on frequency
   const popularTags = useMemo(() => {
-    const tagCounts = new Map<string, number>();
-    
-    bookmarks.forEach(bookmark => {
-      bookmark.tags.forEach(tag => {
-        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
-      });
-    });
-    
-    return [...tagCounts.entries()]
+    return Array.from(tagCounts.entries())
       .sort((a, b) => b[1] - a[1]) // Sort by count, descending
       .filter(([tag]) => !selectedTags.includes(tag))
       .slice(0, 15) // Get top 15 popular tags
       .map(([tag]) => tag);
-  }, [bookmarks, selectedTags]);
+  }, [tagCounts, selectedTags]);
 
   return (
     <div className="space-y-4">
@@ -128,6 +134,7 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
                 >
                   {tag}
                   {selectedTags.includes(tag) && <X className="h-3 w-3" />}
+                  <span className="text-xs ml-1">({tagCounts.get(tag) || 0})</span>
                 </Badge>
               ))
             ) : (
@@ -149,6 +156,7 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
                   onClick={() => onTagSelect(tag)}
                 >
                   {tag}
+                  <span className="text-xs ml-1">({tagCounts.get(tag) || 0})</span>
                 </Badge>
               ))
             ) : (

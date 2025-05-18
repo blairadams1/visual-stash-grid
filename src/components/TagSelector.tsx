@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, X } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface TagSelectorProps {
   selectedTags: string[];
@@ -19,10 +20,43 @@ const TagSelector: React.FC<TagSelectorProps> = ({
   placeholder = "Add tag..."
 }) => {
   const [tagInput, setTagInput] = useState<string>("");
+  const { toast } = useToast();
+  
+  const validateTag = (tag: string): boolean => {
+    const trimmedTag = tag.trim();
+    
+    if (trimmedTag.length === 0) return false;
+    
+    if (trimmedTag.length > 15) {
+      toast({
+        title: "Tag cannot be longer than 15 characters",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    if (trimmedTag.includes('.')) {
+      toast({
+        title: "Tag cannot contain periods",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    if (selectedTags.includes(trimmedTag)) {
+      toast({
+        title: "This tag is already added",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    return true;
+  };
   
   const handleAddTag = () => {
     const tag = tagInput.trim();
-    if (tag && !selectedTags.includes(tag)) {
+    if (validateTag(tag)) {
       onTagSelect(tag);
       setTagInput("");
     }
@@ -49,7 +83,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
           type="button"
           onClick={handleAddTag}
           variant="outline"
-          disabled={!tagInput.trim() || selectedTags.includes(tagInput.trim())}
+          disabled={!tagInput.trim()}
         >
           <Plus className="h-4 w-4" />
         </Button>

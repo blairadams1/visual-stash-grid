@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Palette, FileText, Moon, Sun } from 'lucide-react';
+import { Settings, Palette, FileText, Moon, Sun, Tag, FolderTree } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
   DropdownMenu,
@@ -26,6 +26,7 @@ import {
 import BookmarkletInstall from './BookmarkletInstall';
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import TagManager from './TagManager';
 
 interface SettingsDropdownProps {
   bookmarks: any[];
@@ -33,6 +34,7 @@ interface SettingsDropdownProps {
   onChangeCardSize: (size: 'small' | 'medium' | 'large') => void;
   currentTheme: 'light' | 'dark';
   currentCardSize: 'small' | 'medium' | 'large';
+  onToggleSidebar?: () => void;
 }
 
 const SettingsDropdown = ({ 
@@ -40,10 +42,12 @@ const SettingsDropdown = ({
   onChangeTheme, 
   onChangeCardSize,
   currentTheme,
-  currentCardSize 
+  currentCardSize,
+  onToggleSidebar
 }: SettingsDropdownProps) => {
   const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
   const [bookmarkletDialogOpen, setBookmarkletDialogOpen] = useState(false);
+  const [manageTagsDialogOpen, setManageTagsDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importHtmlFile, setImportHtmlFile] = useState<File | null>(null);
   const { toast } = useToast();
@@ -422,6 +426,16 @@ const SettingsDropdown = ({
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           
+          <DropdownMenuItem onClick={() => setManageTagsDialogOpen(true)}>
+            <Tag className="mr-2 h-4 w-4" />
+            Manage Tags
+          </DropdownMenuItem>
+          
+          <DropdownMenuItem onClick={onToggleSidebar}>
+            <FolderTree className="mr-2 h-4 w-4" />
+            Collections
+          </DropdownMenuItem>
+          
           <DropdownMenuSeparator />
           
           <DropdownMenuItem onClick={() => setImportExportDialogOpen(true)}>
@@ -603,6 +617,33 @@ const SettingsDropdown = ({
             >
               Close
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Tags Dialog */}
+      <Dialog open={manageTagsDialogOpen} onOpenChange={setManageTagsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Manage Tags</DialogTitle>
+            <DialogDescription>
+              Add new tags or remove existing ones
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <TagManager />
+          </div>
+          
+          <DialogFooter className="sm:justify-start">
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="secondary"
+              >
+                Close
+              </Button>
+            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>

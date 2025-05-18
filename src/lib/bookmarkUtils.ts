@@ -1,6 +1,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 
+// Types
 export interface Bookmark {
   id: string;
   title: string;
@@ -8,10 +9,18 @@ export interface Bookmark {
   thumbnail: string;
   tags: string[];
   order: number;
-  notes?: string;
+  dateAdded: string;
   collectionId?: string;
-  createdAt?: Date;
-  folderId?: string; // New property to indicate if bookmark is in a folder
+  folderId?: string;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  order: number;
+  parentId?: string;
 }
 
 export interface Folder {
@@ -20,17 +29,8 @@ export interface Folder {
   image: string;
   tags: string[];
   order: number;
+  dateAdded: string;
   collectionId?: string;
-  createdAt?: Date;
-}
-
-export interface Collection {
-  id: string;
-  name: string;
-  description?: string;
-  color?: string;
-  parentId?: string;
-  order: number;
 }
 
 export interface Tag {
@@ -47,234 +47,159 @@ export interface TagCategory {
   color: string;
 }
 
-export const generatePlaceholderThumbnail = () => {
-  // Generate a random color for the placeholder
-  const colors = [
-    '#4285F4', // blue
-    '#34A853', // green
-    '#FBBC05', // yellow
-    '#EA4335', // red
-    '#8AB4F8', // light blue
-    '#4CAF50', // medium green
-    '#FFA000', // orange
-    '#DB4437', // dark red
-    '#673AB7', // purple
-    '#FF5722', // deep orange
-  ];
-  
-  const color = colors[Math.floor(Math.random() * colors.length)];
-  
-  // Return a data URL for a simple colored SVG
-  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='${color.replace('#', '%23')}' /%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='42' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='middle'%3E🔖%3C/text%3E%3C/svg%3E`;
-};
-
+// Functions for creating items
 export const createBookmark = (
-  url: string,
   title: string,
-  tags: string[],
-  existingBookmarks: Bookmark[] = [],
-  collectionId?: string,
+  url: string,
+  existingItems: Array<Bookmark | Folder>,
   thumbnail?: string,
-  notes?: string,
+  tags: string[] = [],
   folderId?: string
 ): Bookmark => {
-  // Find the highest order from existing bookmarks
-  const highestOrder = existingBookmarks.length > 0
-    ? Math.max(...existingBookmarks.map(b => b.order))
-    : 0;
+  // Validate tags
+  const validatedTags = tags
+    .map(tag => tag.trim().toLowerCase())
+    .filter(tag => tag.length > 0 && tag.length <= 15 && !tag.includes('.'))
+    .filter((tag, index, self) => self.indexOf(tag) === index); // Remove duplicates
 
-  // Create default thumbnail if none provided
-  const defaultThumbnail = thumbnail || `https://www.google.com/s2/favicons?domain=${url}&sz=128`;
-  
+  // Calculate the highest order value
+  const highestOrder = Math.max(...existingItems.map(item => item.order || 0), 0);
+
+  // Generate a thumbnail URL if none provided - use a service that captures the top of the page
+  const defaultThumbnail = thumbnail || `https://image.thum.io/get/width/600/crop/800/viewportWidth/1200/noanimate/maxAge/1/${url}`;
+
+  // Create the bookmark
   return {
-    id: uuidv4(),
+    id: `bookmark-${uuidv4()}`,
     title,
     url,
     thumbnail: defaultThumbnail,
-    tags,
+    tags: validatedTags,
     order: highestOrder + 1,
-    notes,
-    collectionId,
-    createdAt: new Date(),
-    folderId,
+    dateAdded: new Date().toISOString(),
+    folderId
+  };
+};
+
+export const createCollection = (
+  name: string,
+  existingCollections: Collection[],
+  parentId?: string,
+  description?: string,
+  color: string = '#D3E4FD'
+): Collection => {
+  // Find the highest order among existing collections
+  const highestOrder = Math.max(...existingCollections.map(col => col.order || 0), 0);
+  
+  // Create the collection
+  return {
+    id: `collection-${uuidv4()}`,
+    name,
+    description,
+    color,
+    order: highestOrder + 1,
+    parentId
   };
 };
 
 export const createFolder = (
   name: string,
-  existingItems: (Bookmark | Folder)[] = [],
-  image?: string,
-  tags: string[] = [],
-  collectionId?: string
+  existingItems: Array<Bookmark | Folder>,
+  image: string = '/lovable-uploads/80ac03c8-9e22-4604-a202-1c5c73c568eb.png',
+  tags: string[] = []
 ): Folder => {
-  // Find the highest order from existing items
-  const highestOrder = existingItems.length > 0
-    ? Math.max(...existingItems.map(item => item.order))
-    : 0;
-
-  // Use default folder image if none provided
-  const defaultImage = image || '/lovable-uploads/80ac03c8-9e22-4604-a202-1c5c73c568eb.png';
-  
-  return {
-    id: uuidv4(),
-    name,
-    image: defaultImage,
-    tags,
-    order: highestOrder + 1,
-    collectionId,
-    createdAt: new Date(),
-  };
-};
-
-// Generate default collections
-export const getDefaultCollections = (): Collection[] => {
-  return [
-    {
-      id: uuidv4(),
-      name: 'My Bookmarks',
-      description: 'Default collection for all your bookmarks',
-      color: '#4285F4',
-      order: 0,
-    },
-    {
-      id: uuidv4(),
-      name: 'Work',
-      description: 'Work-related bookmarks',
-      color: '#34A853',
-      order: 1,
-    },
-    {
-      id: uuidv4(),
-      name: 'Personal',
-      description: 'Personal bookmarks',
-      color: '#FBBC05',
-      order: 2,
-    }
-  ];
-};
-
-// Create a new collection
-export const createCollection = (
-  name: string, 
-  existingCollections: Collection[] = [],
-  parentId?: string,
-  description?: string,
-  color?: string
-): Collection => {
-  // Find the highest order from existing collections
-  const highestOrder = existingCollections.length > 0
-    ? Math.max(...existingCollections.map(c => c.order))
-    : 0;
+  // Validate tags
+  const validatedTags = tags
+    .map(tag => tag.trim().toLowerCase())
+    .filter(tag => tag.length > 0 && tag.length <= 15 && !tag.includes('.'))
+    .filter((tag, index, self) => self.indexOf(tag) === index); // Remove duplicates
     
+  // Calculate the highest order value
+  const highestOrder = Math.max(...existingItems.map(item => item.order || 0), 0);
+  
+  // Create the folder
   return {
-    id: uuidv4(),
+    id: `folder-${uuidv4()}`,
     name,
-    description,
-    color: color || '#4285F4',
-    parentId,
+    image,
+    tags: validatedTags,
     order: highestOrder + 1,
+    dateAdded: new Date().toISOString()
   };
 };
 
-// Function to generate default tag categories
-export const getDefaultTagCategories = (): TagCategory[] => {
-  return [
-    {
-      id: uuidv4(),
-      name: 'Work',
-      color: '#4285F4',
-    },
-    {
-      id: uuidv4(),
-      name: 'Personal',
-      color: '#34A853',
-    },
-    {
-      id: uuidv4(),
-      name: 'Education',
-      color: '#FBBC05',
-    }
-  ];
-};
-
-// Create a new tag
 export const createTag = (
-  name: string, 
+  name: string,
   categoryId?: string,
   color?: string,
   parentTagId?: string
 ): Tag => {
+  // Validate tag name
+  const validatedName = name.trim().toLowerCase();
+
+  if (validatedName.length === 0) {
+    throw new Error("Tag name cannot be empty");
+  }
+
+  if (validatedName.length > 15) {
+    throw new Error("Tag name cannot be longer than 15 characters");
+  }
+
+  if (validatedName.includes('.')) {
+    throw new Error("Tag name cannot contain periods");
+  }
+
+  // Create the tag
   return {
-    id: uuidv4(),
-    name,
+    id: `tag-${uuidv4()}`,
+    name: validatedName,
     categoryId,
-    color: color || '#4285F4',
-    parentTagId,
+    color,
+    parentTagId
   };
 };
 
-// Create a new tag category
 export const createTagCategory = (
   name: string,
   color: string
 ): TagCategory => {
   return {
-    id: uuidv4(),
+    id: `category-${uuidv4()}`,
     name,
-    color,
+    color
   };
 };
 
-// Generate auto tags based on URL and title
-export const generateAutoTags = (url: string, title: string, limit: number = 3): { tags: string[] } => {
-  const combinedText = `${url} ${title}`.toLowerCase();
-  
-  // Common keywords to detect
-  const keywordMap: Record<string, string[]> = {
-    'dev': ['github', 'stackoverflow', 'gitlab', 'dev', 'code', 'programming'],
-    'social': ['twitter', 'facebook', 'instagram', 'linkedin', 'social'],
-    'video': ['youtube', 'vimeo', 'video', 'stream', 'watch'],
-    'shop': ['amazon', 'ebay', 'shop', 'store', 'buy'],
-    'news': ['news', 'article', 'blog', 'post'],
-    'docs': ['docs', 'documentation', 'guide', 'tutorial', 'learn'],
-  };
-  
-  const tags: string[] = [];
-  
-  // Extract domain as a potential tag
-  try {
-    const domain = new URL(url).hostname
-      .replace('www.', '')
-      .split('.')
-      .slice(0, -1)
-      .join('.');
-    
-    if (domain && !['com', 'org', 'net', 'io'].includes(domain)) {
-      tags.push(domain);
+// Default generators
+export const getDefaultCollections = (): Collection[] => {
+  return [
+    createCollection("Work", [], undefined, "Work-related bookmarks", "#FEC6A1"),
+    createCollection("Personal", [], undefined, "Personal bookmarks", "#D3E4FD"),
+    createCollection("Learning", [], undefined, "Educational resources", "#F2FCE2"),
+  ];
+};
+
+export const getDefaultTagCategories = (): TagCategory[] => {
+  return [
+    {
+      id: "category-general",
+      name: "General",
+      color: "#D3E4FD"
+    },
+    {
+      id: "category-tech",
+      name: "Technology",
+      color: "#E5DEFF"
+    },
+    {
+      id: "category-work",
+      name: "Work",
+      color: "#FEC6A1"
+    },
+    {
+      id: "category-personal",
+      name: "Personal",
+      color: "#FFDEE2"
     }
-  } catch (e) {
-    // Invalid URL, skip domain extraction
-  }
-  
-  // Match keywords
-  Object.entries(keywordMap).forEach(([category, keywords]) => {
-    if (tags.length < limit && keywords.some(keyword => combinedText.includes(keyword))) {
-      tags.push(category);
-    }
-  });
-  
-  // Fill remaining slots with common words from title
-  if (tags.length < limit && title) {
-    const words = title
-      .toLowerCase()
-      .replace(/[^\w\s]/g, '')
-      .split(/\s+/)
-      .filter(word => word.length > 3)
-      .filter(word => !tags.includes(word))
-      .slice(0, limit - tags.length);
-    
-    tags.push(...words);
-  }
-  
-  return { tags };
+  ];
 };
