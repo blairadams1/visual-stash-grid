@@ -14,13 +14,13 @@ export const getColumnClasses = (layout: 'grid' | 'list' | 'compact', cardSize: 
   }
 };
 
-// Add card height classes based on size - further reduced heights
+// Updated height for large card size - significantly taller
 export const getCardHeightClasses = (cardSize: string) => {
   switch (cardSize) {
     case 'small':
       return 'h-32';
     case 'large':
-      return 'h-48';
+      return 'h-80'; // Much taller height for large cards (was h-48)
     default: // medium
       return 'h-40';
   }

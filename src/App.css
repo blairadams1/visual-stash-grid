@@ -1,3 +1,4 @@
+
 :root {
   --background: 0 0% 100%;
   --foreground: 240 10% 3.9%;
@@ -112,7 +113,8 @@
   height: 120px !important;
 }
 
-/* Large card size - 120% taller */
+/* Large card size - significantly taller (more than 2x) */
 .large-card-height {
-  height: 120% !important;
+  height: 220% !important;
 }
+
