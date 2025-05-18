@@ -123,16 +123,9 @@ const Index = () => {
   // Sort bookmarks by order
   const sortedBookmarks = [...filteredBookmarks].sort((a, b) => a.order - b.order);
 
-  // Get card height based on card size setting
-  const getCardHeight = () => {
-    switch (cardSize) {
-      case 'small':
-        return 'h-40';
-      case 'large':
-        return 'h-64';
-      default:
-        return 'h-52'; // medium size
-    }
+  // Get card size based on card size setting - update this function to just return the size directly
+  const getCardSize = () => {
+    return cardSize;
   };
 
   return (
@@ -257,7 +250,7 @@ const Index = () => {
               onDeleteBookmark={handleDeleteBookmark}
               onUpdateBookmark={handleUpdateBookmark}
               layout={layout}
-              cardSize={getCardHeight()}
+              cardSize={getCardSize()}
             />
           ) : (
             <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-8 rounded-lg shadow text-center mx-2`}>

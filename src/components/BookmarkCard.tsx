@@ -126,7 +126,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
               className="w-full h-full object-cover"
             />
             
-            {/* Gradient overlay - moved up 20% as requested */}
+            {/* Gradient overlay */}
             <div className="absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-t from-black/80 to-transparent">
               <a
                 href={bookmark.url}
@@ -136,11 +136,11 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
               />
             </div>
 
-            {/* Settings icon with blue background */}
+            {/* Settings icon - moved to the left side */}
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-bookmark-blue/20 text-white hover:bg-bookmark-blue/40 p-1.5 h-8 w-8 backdrop-blur-sm"
+              className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity bg-bookmark-blue/20 text-white hover:bg-bookmark-blue/40 p-1.5 h-8 w-8 backdrop-blur-sm"
               onClick={handleSettingsClick}
             >
               <Settings className="h-4 w-4" />
@@ -183,11 +183,11 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
             </div>
           </div>
 
-          {/* Delete button - visible on hover */}
+          {/* Delete button - moved to the right side */}
           <Button
             variant="destructive"
             size="sm"
-            className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();

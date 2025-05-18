@@ -126,7 +126,7 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({
   const flatCollections = getFlatCollections(collections);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 mb-6">
+    <form onSubmit={handleSubmit} className="space-y-4 mb-6 h-[40vh] overflow-y-auto">
       <div className="grid gap-4 md:grid-cols-5">
         <div className="md:col-span-2">
           <Input
