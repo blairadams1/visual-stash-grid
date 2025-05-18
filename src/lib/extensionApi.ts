@@ -1,3 +1,4 @@
+
 /**
  * This file simulates browser extension APIs that would be available in a real extension
  */
@@ -132,11 +133,18 @@ export const getCurrentTab = async (): Promise<{ url: string; title: string } | 
   const urlParams = new URLSearchParams(window.location.search);
   const urlFromParams = urlParams.get('url');
   const titleFromParams = urlParams.get('title');
+  const h1FromParams = urlParams.get('h1');
   
   if (urlFromParams) {
+    // Use h1 as title if available and title is missing or generic
+    let bestTitle = titleFromParams || 'Bookmarked Page';
+    if (h1FromParams && (!titleFromParams || titleFromParams.includes('Home') || titleFromParams.includes('Welcome'))) {
+      bestTitle = h1FromParams;
+    }
+    
     return {
       url: urlFromParams,
-      title: titleFromParams || 'Bookmarked Page'
+      title: bestTitle
     };
   }
   

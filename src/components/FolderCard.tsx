@@ -44,7 +44,7 @@ const FolderCard: React.FC<FolderCardProps> = ({
       <CardContent className="p-0 h-full flex flex-col relative">
         {/* Container for the folder image with consistent aspect ratio */}
         <div className="w-full h-full relative">
-          <AspectRatio ratio={3/2}>
+          <AspectRatio ratio={3/2} className="large-card-height">
             <img
               src="/lovable-uploads/ee3d1214-9131-4ec4-9312-ddc55b3b8d6f.png"
               alt={folder.name}

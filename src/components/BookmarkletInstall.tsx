@@ -15,9 +15,25 @@ const BookmarkletInstall = () => {
   const [showDialog, setShowDialog] = useState(false);
   const { toast } = useToast();
   
-  // Create bookmarklet code with improved behavior
+  // Create bookmarklet code with improved behavior - pass more data to better identify page
   const bookmarkletCode = `javascript:(function(){
-    const popup = window.open('${window.location.origin}/extension?url='+encodeURIComponent(window.location.href)+'&title='+encodeURIComponent(document.title),'TagMarked','width=400,height=500,resizable=yes');
+    // Get meta description for better page context
+    const metaDesc = document.querySelector('meta[name="description"]')?.content || '';
+    
+    // Get h1 text which often contains the main page title
+    const h1Text = document.querySelector('h1')?.textContent || '';
+    
+    // Get main content text for context
+    const mainText = document.querySelector('main')?.textContent?.substring(0, 500) || 
+                    document.body.textContent?.substring(0, 500) || '';
+                    
+    const popup = window.open('${window.location.origin}/extension?url='+
+      encodeURIComponent(window.location.href)+
+      '&title='+encodeURIComponent(document.title)+
+      '&h1='+encodeURIComponent(h1Text)+
+      '&desc='+encodeURIComponent(metaDesc)+
+      '&content='+encodeURIComponent(mainText),
+      'TagMarked','width=400,height=500,resizable=yes');
     if(!popup) alert('Please allow popups for TagMarked to work properly.');
   })();`;
 

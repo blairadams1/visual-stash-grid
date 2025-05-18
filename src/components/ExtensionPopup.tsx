@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { getCurrentTab, sendMessage } from '@/lib/extensionApi';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Bookmark } from '@/lib/bookmarkUtils';
+import { Bookmark, generateAutoTags } from '@/lib/bookmarkUtils';
 import ExtensionHeader from './extension/ExtensionHeader';
 import BookmarkForm from './extension/BookmarkForm';
 import DashboardLink from './extension/DashboardLink';
@@ -11,6 +11,11 @@ import DashboardLink from './extension/DashboardLink';
 const ExtensionPopup = () => {
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
+  const [pageContext, setPageContext] = useState({
+    h1: '',
+    description: '',
+    content: ''
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
@@ -37,10 +42,35 @@ const ExtensionPopup = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const urlFromParams = urlParams.get('url');
       const titleFromParams = urlParams.get('title');
+      const h1FromParams = urlParams.get('h1');
+      const descFromParams = urlParams.get('desc');
+      const contentFromParams = urlParams.get('content');
       
       if (urlFromParams) {
         setUrl(urlFromParams);
-        if (titleFromParams) setTitle(titleFromParams);
+        
+        // Process and set a smarter title
+        const rawTitle = titleFromParams || '';
+        let smarterTitle = rawTitle;
+        
+        // If we have an H1, it might be more descriptive than the page title
+        if (h1FromParams && h1FromParams.length > 0 && h1FromParams.length < 100) {
+          smarterTitle = h1FromParams;
+        }
+        
+        // Some sites have domain in title, try to clean it up
+        smarterTitle = smarterTitle.replace(/\s*[|]\s*.+$/, '');
+        smarterTitle = smarterTitle.replace(/\s*[-]\s*[^-]+$/, '');
+        
+        setTitle(smarterTitle);
+        
+        // Store additional context for potential tag generation
+        setPageContext({
+          h1: h1FromParams || '',
+          description: descFromParams || '',
+          content: contentFromParams || ''
+        });
+        
         return;
       }
       
@@ -128,6 +158,7 @@ const ExtensionPopup = () => {
         popularTags={popularTags}
         isLoading={isLoading}
         isSuccess={isSuccess}
+        pageContext={pageContext}
       />
       
       <DashboardLink />
