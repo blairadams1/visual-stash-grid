@@ -314,8 +314,7 @@ const Index = () => {
               </Popover>
               
               <SettingsDropdown 
-                bookmarks={bookmarks}
-                folders={folders}
+                bookmarks={bookmarks} 
                 onChangeTheme={setTheme}
                 onChangeCardSize={setCardSize}
                 currentTheme={theme}
