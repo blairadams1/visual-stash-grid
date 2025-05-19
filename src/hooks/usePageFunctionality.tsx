@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { useBookmarks } from '@/hooks/useBookmarks';
@@ -277,7 +276,7 @@ export const usePageFunctionality = () => {
         toast({
           title: "Folder Structure Warning",
           description: "Some folders had circular references and were imported without parent relationships.",
-          variant: "warning",
+          variant: "warning", // Now "warning" is a valid variant
         });
       }
     }
