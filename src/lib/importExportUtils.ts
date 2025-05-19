@@ -57,53 +57,58 @@ export const generateAutomaticTags = (url: string, title: string): string[] => {
   return Array.from(tags).slice(0, 4);
 };
 
-// Parse HTML bookmarks file
+// Parse HTML bookmarks file - completely rewritten for better folder structure handling
 export const parseHTMLBookmarks = (html: string) => {
+  console.log('Starting HTML bookmark parsing...');
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   
   const importedBookmarks: Bookmark[] = [];
-  const importedFolders: Folder[] = [];
-  const folderMap: Record<string, string> = {}; // Map HTML element IDs to folder IDs
+  const importedFolders: Map<string, Folder> = new Map(); // Use a map for easier reference
+  const folderRelationships: Map<string, string> = new Map(); // Child ID to parent ID mapping
   
-  // Find all bookmark folders (DL elements)
+  // First find all folders (DT elements with H3 and DL)
   const findFolders = () => {
-    // Get all DT elements that contain H3 (folder titles)
-    const folderItems = doc.querySelectorAll('dt');
+    console.log('Finding folders...');
+    const folderItems = Array.from(doc.querySelectorAll('dt'));
     
-    folderItems.forEach(folderItem => {
-      const h3 = folderItem.querySelector('h3');
-      const dl = folderItem.querySelector('dl');
+    folderItems.forEach(dt => {
+      const h3 = dt.querySelector('h3');
+      const dl = dt.querySelector('dl');
       
       if (h3 && dl) {
-        // This is a folder
         const folderName = h3.textContent?.trim() || 'Imported Folder';
+        const folderId = `folder-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Create the folder
         const newFolder = createFolder(folderName);
         
-        // Store the folder and map its DL element ID to its folder ID
-        importedFolders.push(newFolder);
+        // Store the folder and its HTML element ID for reference
+        importedFolders.set(folderId, newFolder);
         
-        // Use a unique identifier for the folder
-        const dlId = dl.id || `dl_${Math.random().toString(36).substr(2, 9)}`;
-        folderMap[dlId] = newFolder.id;
+        // Mark this DL element with our folder ID for bookmark assignment
+        dl.setAttribute('data-folder-id', folderId);
         
-        // Look for parent folder
-        const parentDL = findParentDL(folderItem);
+        // Find parent-child relationships (we'll process these after all folders are created)
+        const parentDL = findParentDL(dt);
         if (parentDL) {
-          const parentId = folderMap[parentDL.id || ''];
-          if (parentId) {
-            newFolder.parentId = parentId;
+          const parentFolderId = parentDL.getAttribute('data-folder-id');
+          if (parentFolderId) {
+            // Remember this relationship to set parentId after all folders are created
+            folderRelationships.set(folderId, parentFolderId);
           }
         }
       }
     });
+    
+    console.log(`Found ${importedFolders.size} folders`);
   };
   
   // Helper function to find parent DL element
   const findParentDL = (element: Element): Element | null => {
     let parent = element.parentElement;
     while (parent) {
-      if (parent.tagName === 'DL') {
+      if (parent.tagName === 'DL' && parent.hasAttribute('data-folder-id')) {
         return parent;
       }
       parent = parent.parentElement;
@@ -111,8 +116,20 @@ export const parseHTMLBookmarks = (html: string) => {
     return null;
   };
   
-  // Get all bookmarks (A elements)
+  // Process folder relationships to set parentIds
+  const processFolderRelationships = () => {
+    console.log('Processing folder relationships...');
+    folderRelationships.forEach((parentId, childId) => {
+      const childFolder = importedFolders.get(childId);
+      if (childFolder) {
+        childFolder.parentId = importedFolders.get(parentId)?.id;
+      }
+    });
+  };
+  
+  // Find all bookmarks (A elements)
   const findBookmarks = () => {
+    console.log('Finding bookmarks...');
     const links = doc.querySelectorAll('a');
     
     links.forEach(link => {
@@ -120,18 +137,14 @@ export const parseHTMLBookmarks = (html: string) => {
       if (!url) return;
       
       const title = link.textContent?.trim() || url;
-      const tagsAttr = link.getAttribute('tags') || '';
       
-      // Get tags from the TAGS attribute if available
-      let tags: string[] = [];
-      if (tagsAttr) {
-        tags = tagsAttr.split(',').map(tag => tag.trim());
-      }
+      // Get tags from attributes if available
+      const tagsAttr = link.getAttribute('tags') || '';
+      let tags: string[] = tagsAttr ? tagsAttr.split(',').map(tag => tag.trim()) : [];
       
       // Generate automatic tags if we don't have enough
       if (tags.length < 3) {
         const generatedTags = generateAutomaticTags(url, title);
-        // Combine and ensure uniqueness
         tags = [...new Set([...tags, ...generatedTags])];
       }
       
@@ -141,7 +154,13 @@ export const parseHTMLBookmarks = (html: string) => {
       let folderId: string | undefined = undefined;
       const parentDL = findParentDL(link);
       if (parentDL) {
-        folderId = folderMap[parentDL.id || ''];
+        const folderDataId = parentDL.getAttribute('data-folder-id');
+        if (folderDataId) {
+          const folder = importedFolders.get(folderDataId);
+          if (folder) {
+            folderId = folder.id;
+          }
+        }
       }
       
       // Create the bookmark
@@ -155,17 +174,23 @@ export const parseHTMLBookmarks = (html: string) => {
       
       importedBookmarks.push(newBookmark);
     });
+    
+    console.log(`Found ${importedBookmarks.length} bookmarks`);
   };
   
-  // Process folders first, then bookmarks
+  // Process the document in order: folders first, then relationships, then bookmarks
   findFolders();
+  processFolderRelationships();
   findBookmarks();
   
-  console.log(`Parsed ${importedBookmarks.length} bookmarks and ${importedFolders.length} folders from HTML`);
+  // Convert the folder Map to an array for returning
+  const folderArray = Array.from(importedFolders.values());
+  
+  console.log(`Parsed ${importedBookmarks.length} bookmarks and ${folderArray.length} folders from HTML`);
   
   return { 
     bookmarks: importedBookmarks, 
-    folders: importedFolders, 
+    folders: folderArray, 
     error: null 
   };
 };

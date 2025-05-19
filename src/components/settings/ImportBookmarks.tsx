@@ -13,10 +13,15 @@ interface ImportBookmarksProps {
 const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks }) => {
   const { toast } = useToast();
 
-  // Function to handle file import
+  // Function to handle file import with better error handling and logs
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>, format: 'json' | 'html') => {
     const file = event.target.files?.[0];
     if (!file) return;
+    
+    toast({
+      title: "Processing Import",
+      description: "Analyzing your bookmark file...",
+    });
     
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -25,10 +30,12 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks }) 
         let importResults = { bookmarks: [] as Bookmark[], folders: [] as Folder[], error: null as string | null };
         
         if (format === 'json') {
+          console.log('Processing JSON import...');
           // Parse JSON and validate
           const importedData = JSON.parse(content);
           importResults = processJSONBookmarks(importedData);
         } else if (format === 'html') {
+          console.log('Processing HTML import...');
           // Parse HTML bookmarks
           importResults = parseHTMLBookmarks(content);
         }
@@ -46,7 +53,7 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks }) 
         
         if (importResults.bookmarks.length > 0 || importResults.folders.length > 0) {
           if (onImportBookmarks) {
-            // First import folders to ensure correct folder structure
+            // Pass both bookmarks and folders for processing
             onImportBookmarks(importResults.bookmarks, importResults.folders);
             toast({
               title: "Import Successful",

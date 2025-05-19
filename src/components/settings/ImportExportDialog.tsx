@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -25,10 +25,25 @@ const ImportExportDialog: React.FC<ImportExportDialogProps> = ({
   bookmarks, 
   onImportBookmarks 
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Custom handler for import to provide feedback and close dialog when done
+  const handleImport = (bookmarks: Bookmark[], folders?: Folder[]) => {
+    if (onImportBookmarks) {
+      onImportBookmarks(bookmarks, folders);
+      
+      // Close dialog after successful import (with slight delay)
+      setTimeout(() => setIsOpen(false), 1000);
+    }
+  };
+
   return (
-    <AlertDialog>
+    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger asChild>
-        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+        <DropdownMenuItem onSelect={(e) => {
+          e.preventDefault();
+          setIsOpen(true);
+        }}>
           <Download className="mr-2 h-4 w-4" />
           <span>Import/Export</span>
         </DropdownMenuItem>
@@ -45,7 +60,7 @@ const ImportExportDialog: React.FC<ImportExportDialogProps> = ({
         
         <div className="grid grid-cols-1 gap-4">
           <ExportBookmarks bookmarks={bookmarks} />
-          <ImportBookmarks onImportBookmarks={onImportBookmarks} />
+          <ImportBookmarks onImportBookmarks={handleImport} />
         </div>
         
         <AlertDialogFooter>
