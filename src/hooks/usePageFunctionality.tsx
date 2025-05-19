@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { useBookmarks } from '@/hooks/useBookmarks';
@@ -158,13 +159,15 @@ export const usePageFunctionality = () => {
     let importedBookmarkCount = 0;
     let importedFolderCount = 0;
     
+    // Initialize folderIdMap to track folder ID mappings
+    const folderIdMap = new Map<string, string>();
+    
     // Process folders first to maintain hierarchy
     if (importedFolders.length > 0) {
       console.log(`Importing ${importedFolders.length} folders...`);
       
       // Create a map to track folder dependencies and their status
       const folderDependencies = new Map<string, Set<string>>();
-      const folderIdMap = new Map<string, string>();
       const processedFolderIds = new Set<string>();
       const circularDependencies = new Set<string>();
       

@@ -1,3 +1,4 @@
+
 import { Bookmark, Folder, createBookmark, createFolder } from '@/lib/bookmarkUtils';
 
 // Type definitions for validation
@@ -193,6 +194,9 @@ export const parseHTMLBookmarks = (html: string) => {
     const folderRelationships: Map<string, string> = new Map();
     const validationErrors: string[] = [];
     
+    // Initialize folderIdMap to track folder ID conversions
+    const folderIdMap = new Map<string, string>();
+    
     // First find all folders (DT elements with H3 and DL)
     const findFolders = () => {
       console.log('Finding folders...');
@@ -217,6 +221,7 @@ export const parseHTMLBookmarks = (html: string) => {
           const newFolder = createFolder(folderName);
           
           importedFolders.set(folderId, newFolder);
+          folderIdMap.set(folderId, newFolder.id);
           dl.setAttribute('data-folder-id', folderId);
           
           const parentDL = findParentDL(dt);
@@ -258,6 +263,7 @@ export const parseHTMLBookmarks = (html: string) => {
     const findBookmarks = () => {
       console.log('Finding bookmarks...');
       const links = doc.querySelectorAll('a');
+      console.log(`Found ${links.length} links in HTML`);
       
       links.forEach((link, index) => {
         const url = link.getAttribute('href');
@@ -297,7 +303,8 @@ export const parseHTMLBookmarks = (html: string) => {
           if (parentDL) {
             const folderDataId = parentDL.getAttribute('data-folder-id');
             if (folderDataId && importedFolders.has(folderDataId)) {
-              folderId = importedFolders.get(folderDataId)?.id;
+              // Use the mapped ID from our folderIdMap
+              folderId = folderIdMap.get(folderDataId);
             }
           }
         }
@@ -319,6 +326,9 @@ export const parseHTMLBookmarks = (html: string) => {
     findFolders();
     processFolderRelationships();
     findBookmarks();
+    
+    // Log stats about what we found
+    console.log(`HTML parsing complete: Found ${importedBookmarks.length} bookmarks and ${importedFolders.size} folders`);
     
     // Convert folders to array
     const folderArray = Array.from(importedFolders.values());

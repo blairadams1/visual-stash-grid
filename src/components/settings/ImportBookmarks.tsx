@@ -33,8 +33,18 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
         if (format === 'json') {
           console.log('Processing JSON import...');
           // Parse JSON and validate
-          const importedData = JSON.parse(content);
-          importResults = processJSONBookmarks(importedData);
+          try {
+            const importedData = JSON.parse(content);
+            importResults = processJSONBookmarks(importedData);
+          } catch (error) {
+            console.error('JSON parsing error:', error);
+            toast({
+              title: "Import Error",
+              description: "Invalid JSON format. Please check your file.",
+              variant: "destructive",
+            });
+            return;
+          }
         } else if (format === 'html') {
           console.log('Processing HTML import...');
           console.log('HTML content length:', content.length);
@@ -43,6 +53,7 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
         }
         
         if (importResults.error) {
+          console.error('Import error:', importResults.error);
           toast({
             title: "Import Error",
             description: importResults.error,
@@ -52,8 +63,12 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
         }
         
         console.log(`Import parsed: ${importResults.bookmarks.length} bookmarks, ${importResults.folders.length} folders`);
-        console.log('First few bookmarks:', importResults.bookmarks.slice(0, 3));
-        console.log('First few folders:', importResults.folders.slice(0, 3));
+        if (importResults.bookmarks.length > 0) {
+          console.log('First few bookmarks:', importResults.bookmarks.slice(0, 3));
+        }
+        if (importResults.folders.length > 0) {
+          console.log('First few folders:', importResults.folders.slice(0, 3));
+        }
         
         if (importResults.bookmarks.length > 0 || importResults.folders.length > 0) {
           if (onImportBookmarks) {
