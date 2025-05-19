@@ -1,7 +1,7 @@
 
 import { useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { Folder } from '@/lib/bookmarkUtils';
+import { Folder } from '@/lib/types';
 
 /**
  * Hook for folder-related operations

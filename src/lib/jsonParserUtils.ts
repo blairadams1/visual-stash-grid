@@ -1,5 +1,6 @@
 
-import { Bookmark, Folder, createBookmark, createFolder } from '@/lib/bookmarkUtils';
+import { Bookmark, Folder } from '@/lib/types';
+import { createBookmark, createFolder } from '@/lib/createUtils';
 import { validateBookmarkData, validateFolderData } from './validationUtils';
 import { validateAndSanitizeUrl, generateThumbnail } from './urlUtils';
 

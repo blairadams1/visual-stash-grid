@@ -1,6 +1,6 @@
-
 import { useState, useEffect, useCallback } from 'react';
-import { Bookmark, createBookmark } from '@/lib/bookmarkUtils';
+import { Bookmark } from '@/lib/types';
+import { createBookmark } from '@/lib/createUtils';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export function useBookmarks() {

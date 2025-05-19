@@ -1,5 +1,5 @@
 
-import { Bookmark, Collection, Folder } from "@/lib/bookmarkUtils";
+import { Bookmark, Collection, Folder } from "@/lib/types";
 import { useState, useRef, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import GridItem from "./bookmark-grid/GridItem";

@@ -1,6 +1,6 @@
 
 import { useCallback } from 'react';
-import { Bookmark } from '@/lib/bookmarkUtils';
+import { Bookmark } from '@/lib/types';
 
 /**
  * Hook for bookmark-related operations

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Download } from 'lucide-react';
-import { Bookmark, Folder } from '@/lib/bookmarkUtils';
+import { Bookmark, Folder } from '@/lib/types';
 import ExportBookmarks from './ExportBookmarks';
 import ImportBookmarks from './ImportBookmarks';
 import { useToast } from "@/components/ui/use-toast";

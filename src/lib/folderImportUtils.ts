@@ -1,5 +1,5 @@
 
-import { Folder } from '@/lib/bookmarkUtils';
+import { Folder } from '@/lib/types';
 
 /**
  * Process imported folders handling circular dependencies and hierarchy

@@ -1,6 +1,6 @@
-
 import { useState, useEffect, useCallback } from 'react';
-import { Folder, createFolder } from '@/lib/bookmarkUtils';
+import { Folder } from '@/lib/types';
+import { createFolder } from '@/lib/createUtils';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useToast } from '@/components/ui/use-toast';
 
