@@ -1,7 +1,9 @@
+
 import { Folder } from '@/lib/types';
 
 /**
  * Process imported folders handling circular dependencies and hierarchy
+ * with improved logging and error handling
  */
 export const processFolders = (
   importedFolders: Folder[],
@@ -19,6 +21,9 @@ export const processFolders = (
     return { folderIdMap, importedFolderCount };
   }
   
+  // Log some details about the folders we're processing
+  console.log('First folder in import:', importedFolders[0]);
+  
   // Create a map to track folder dependencies and their status
   const folderDependencies = new Map<string, Set<string>>();
   const processedFolderIds = new Set<string>();
@@ -31,18 +36,24 @@ export const processFolders = (
       return;
     }
     
+    // Log folder information for debugging
+    console.log(`Analyzing folder: "${folder.name}" (ID: ${folder.id}, Parent: ${folder.parentId || 'none'})`);
+    
     if (folder.parentId) {
       // Verify parent folder exists in the import set
       const parentExists = importedFolders.some(f => f.id === folder.parentId);
       if (!parentExists) {
         console.warn(`Parent folder ${folder.parentId} not found for folder ${folder.name}`);
-        return;
+        // Still track this folder, but without parent dependency
       }
       
       if (!folderDependencies.has(folder.id)) {
         folderDependencies.set(folder.id, new Set());
       }
-      folderDependencies.get(folder.id)?.add(folder.parentId);
+      
+      if (parentExists) {
+        folderDependencies.get(folder.id)?.add(folder.parentId as string);
+      }
     }
   });
   
@@ -50,6 +61,7 @@ export const processFolders = (
   const detectCircularDependencies = (folderId: string, visited: Set<string>, path: Set<string>) => {
     if (path.has(folderId)) {
       // Found a circular dependency
+      console.warn(`Circular dependency detected with folder ID: ${folderId}`);
       path.forEach(id => circularDependencies.add(id));
       return true;
     }
@@ -76,10 +88,15 @@ export const processFolders = (
   
   // Detect all circular dependencies
   importedFolders.forEach(folder => {
-    if (!processedFolderIds.has(folder.id)) {
+    if (!processedFolderIds.has(folder.id) && folder.id) {
       detectCircularDependencies(folder.id, new Set(), new Set());
     }
   });
+  
+  if (circularDependencies.size > 0) {
+    console.warn(`Found ${circularDependencies.size} folders with circular dependencies`);
+    console.warn('Circular dependencies:', Array.from(circularDependencies));
+  }
   
   // Function to get folder depth (distance from root)
   const getFolderDepth = (folderId: string, depth: number = 0, visited: Set<string> = new Set()): number => {
@@ -106,13 +123,20 @@ export const processFolders = (
   const sortedFolders = [...importedFolders]
     .filter(folder => folder.id && folder.name) // Filter out invalid folders
     .sort((a, b) => {
+      // Always place root folders (no parent) first
+      if (!a.parentId && b.parentId) return -1;
+      if (a.parentId && !b.parentId) return 1;
+      
+      // If both have parents or both don't, sort by depth
       const depthA = getFolderDepth(a.id);
       const depthB = getFolderDepth(b.id);
       return depthA - depthB;
     });
   
+  console.log(`Sorted ${sortedFolders.length} folders by hierarchy depth`);
+  
   // Process folders in order
-  sortedFolders.forEach(folder => {
+  sortedFolders.forEach((folder, index) => {
     try {
       let parentId: string | undefined;
       
@@ -121,6 +145,7 @@ export const processFolders = (
         const mappedParentId = folderIdMap.get(folder.parentId);
         if (mappedParentId) {
           parentId = mappedParentId;
+          console.log(`Using mapped parent ID ${mappedParentId} for folder "${folder.name}"`);
         }
       }
       
@@ -142,17 +167,19 @@ export const processFolders = (
       importedFolderCount++;
       
       console.log(`Created folder "${folder.name}" with ID: ${newFolder.id}${parentId ? ` under parent: ${parentId}` : ''}`);
+      
+      // Log progress for larger imports
+      if (index === 0 || index === sortedFolders.length - 1 || index % 10 === 0) {
+        console.log(`Processed folder ${index + 1}/${sortedFolders.length}`);
+      }
     } catch (error) {
       console.error(`Error creating folder "${folder.name}":`, error);
     }
   });
   
   // Log summary
-  if (circularDependencies.size > 0) {
-    console.warn('Circular dependencies found:', Array.from(circularDependencies));
-  }
-  
   console.log(`Successfully processed ${importedFolderCount} out of ${importedFolders.length} folders`);
+  console.log(`Created ${folderIdMap.size} folder mappings`);
   
   // Return the folderIdMap and count 
   return { folderIdMap, importedFolderCount };

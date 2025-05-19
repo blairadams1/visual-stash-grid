@@ -1,10 +1,41 @@
 
 import { validateAndSanitizeUrl } from './urlUtils';
 
-// Helper function to validate HTML structure
+// Enhanced function to validate HTML structure with improved format detection
 export const validateHtmlStructure = (html: string): boolean => {
-  const requiredElements = ['<DL>', '<DT>', '<A'];
-  return requiredElements.every(element => html.includes(element));
+  // Make case-insensitive checks for required elements
+  const lowerHtml = html.toLowerCase();
+  
+  // Check for basic bookmark structure elements (case-insensitive)
+  const requiredElements = ['<dl', '<dt', '<a'];
+  const basicStructureValid = requiredElements.every(element => 
+    lowerHtml.includes(element.toLowerCase())
+  );
+  
+  if (!basicStructureValid) {
+    console.warn('HTML validation failed: Missing basic bookmark structure elements');
+    return false;
+  }
+  
+  // Check for common bookmark header patterns
+  const hasNetscapeHeader = html.includes('DOCTYPE NETSCAPE-Bookmark-file-1') || 
+                          html.includes('NETSCAPE-Bookmark-file-1');
+                          
+  const hasBookmarksHeader = lowerHtml.includes('<title>bookmarks</title>') || 
+                           lowerHtml.includes('<h1>bookmarks</h1>') ||
+                           lowerHtml.includes('<h3>bookmarks</h3>');
+  
+  // Log what we found for debugging
+  console.log('HTML validation details:', {
+    basicStructureValid,
+    hasNetscapeHeader,
+    hasBookmarksHeader,
+    htmlLength: html.length,
+    firstFewChars: html.substring(0, 100),
+  });
+  
+  // Accept files that have either proper headers or at least the basic structure
+  return basicStructureValid && (hasNetscapeHeader || hasBookmarksHeader || html.includes('<DL>'));
 };
 
 // Helper function to validate bookmark data

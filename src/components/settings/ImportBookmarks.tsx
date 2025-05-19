@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Bookmark, Folder } from '@/lib/bookmarkUtils';
 import { parseHTMLBookmarks, processJSONBookmarks } from '@/lib/importExportUtils';
+import { Loader2 } from 'lucide-react';
 
 interface ImportBookmarksProps {
   onImportBookmarks?: (bookmarks: Bookmark[], folders?: Folder[]) => void;
@@ -13,15 +14,17 @@ interface ImportBookmarksProps {
 
 const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, isImporting = false }) => {
   const { toast } = useToast();
+  const [processingFile, setProcessingFile] = useState(false);
 
   // Function to handle file import with better error handling and logs
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>, format: 'json' | 'html') => {
     const file = event.target.files?.[0];
     if (!file) return;
     
+    setProcessingFile(true);
     toast({
       title: "Processing Import",
-      description: "Analyzing your bookmark file...",
+      description: `Analyzing your ${format.toUpperCase()} bookmark file...`,
     });
     
     const reader = new FileReader();
@@ -32,6 +35,8 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
         
         if (format === 'json') {
           console.log('Processing JSON import...');
+          console.log('JSON content length:', content.length);
+          
           // Parse JSON and validate
           try {
             const importedData = JSON.parse(content);
@@ -43,11 +48,14 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
               description: "Invalid JSON format. Please check your file.",
               variant: "destructive",
             });
+            setProcessingFile(false);
             return;
           }
         } else if (format === 'html') {
           console.log('Processing HTML import...');
           console.log('HTML content length:', content.length);
+          console.log('HTML content starts with:', content.substring(0, 100));
+          
           // Parse HTML bookmarks
           importResults = parseHTMLBookmarks(content);
         }
@@ -59,6 +67,7 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
             description: importResults.error,
             variant: "destructive",
           });
+          setProcessingFile(false);
           return;
         }
         
@@ -78,7 +87,7 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
         } else {
           toast({
             title: "Import Error",
-            description: "No valid bookmarks found in the file.",
+            description: "No valid bookmarks found in the file. Please check the format.",
             variant: "destructive",
           });
         }
@@ -91,8 +100,19 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
         });
       }
       
-      // Reset the file input
+      // Reset the file input and state
       event.target.value = '';
+      setProcessingFile(false);
+    };
+    
+    reader.onerror = () => {
+      console.error("FileReader error");
+      toast({
+        title: "Import Error",
+        description: "Failed to read the file. The file may be corrupted.",
+        variant: "destructive",
+      });
+      setProcessingFile(false);
     };
     
     reader.readAsText(file);
@@ -107,10 +127,13 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
             variant="outline" 
             className="mb-2" 
             onClick={() => document.getElementById('import-json')?.click()}
-            disabled={isImporting}
+            disabled={isImporting || processingFile}
           >
-            <Upload className="mr-2 h-4 w-4" /> 
-            {isImporting ? "Importing..." : "Import JSON"}
+            {processingFile || isImporting ? 
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 
+              <Upload className="mr-2 h-4 w-4" />
+            }
+            {processingFile ? "Processing..." : isImporting ? "Importing..." : "Import JSON"}
           </Button>
           <input 
             id="import-json" 
@@ -118,7 +141,7 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
             accept=".json" 
             className="hidden" 
             onChange={(e) => handleFileImport(e, 'json')}
-            disabled={isImporting}
+            disabled={isImporting || processingFile}
           />
         </div>
         
@@ -127,10 +150,13 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
             variant="outline" 
             className="mb-2" 
             onClick={() => document.getElementById('import-html')?.click()}
-            disabled={isImporting}
+            disabled={isImporting || processingFile}
           >
-            <Upload className="mr-2 h-4 w-4" /> 
-            {isImporting ? "Importing..." : "Import HTML"}
+            {processingFile || isImporting ? 
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 
+              <Upload className="mr-2 h-4 w-4" />
+            }
+            {processingFile ? "Processing..." : isImporting ? "Importing..." : "Import HTML"}
           </Button>
           <input 
             id="import-html" 
@@ -138,10 +164,13 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
             accept=".html,.htm" 
             className="hidden" 
             onChange={(e) => handleFileImport(e, 'html')}
-            disabled={isImporting}
+            disabled={isImporting || processingFile}
           />
         </div>
       </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+        Supports HTML exports from Chrome, Firefox, and Safari browsers, or JSON exports from Tagmarked.
+      </p>
     </div>
   );
 };
