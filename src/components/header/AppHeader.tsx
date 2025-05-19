@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Filter, FolderPlus, MoveLeft, Plus, RefreshCw } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -27,7 +28,6 @@ interface AppHeaderProps {
   onChangeCardSize: (size: 'small' | 'medium' | 'large') => void;
   currentCardSize: 'small' | 'medium' | 'large';
   onToggleSidebar: () => void;
-  handleImportBookmarks: (bookmarks: Bookmark[], folders?: Folder[]) => void;
   handleTagSelect: (tag: string) => void;
   handleTagDeselect: (tag: string) => void;
   handleClearAllTags: () => void;
@@ -54,7 +54,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   onChangeCardSize,
   currentCardSize,
   onToggleSidebar,
-  handleImportBookmarks,
   handleTagSelect,
   handleTagDeselect,
   handleClearAllTags,
@@ -171,7 +170,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               currentTheme={theme}
               currentCardSize={currentCardSize}
               onToggleSidebar={onToggleSidebar}
-              onImportBookmarks={handleImportBookmarks}
             />
             
             <div className="relative w-full md:w-64">
