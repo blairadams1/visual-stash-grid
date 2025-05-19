@@ -1,186 +1,117 @@
-
 import { Folder } from '@/lib/types';
 
 /**
- * Process imported folders handling circular dependencies and hierarchy
- * with improved logging and error handling
+ * Process imported folders, creating them in the app and maintaining hierarchy
+ * @param importedFolders The folders to import
+ * @param addFolder Function to add a folder to the system
+ * @returns Object containing the mapping of original IDs to new IDs and count of imported folders
  */
-export const processFolders = (
-  importedFolders: Folder[],
-  addFolder: (name: string, image?: string, tags?: string[], parentId?: string) => Folder
-): { folderIdMap: Map<string, string>, importedFolderCount: number } => {
-  console.log(`Processing ${importedFolders.length} folders...`);
-  
-  // Track how many folders we've successfully imported
+export const processFolders = (importedFolders: Folder[], addFolder: (name: string, image?: string, tags?: string[], parentId?: string) => Folder) => {
+  // Create map to track original folder IDs to new folder IDs
+  const folderIdMap = new Map<string, string>();
+  const errors: string[] = [];
   let importedFolderCount = 0;
   
-  // Initialize folderIdMap to track folder ID mappings
-  const folderIdMap = new Map<string, string>();
+  console.log(`Processing ${importedFolders.length} imported folders`);
   
-  if (importedFolders.length === 0) {
-    return { folderIdMap, importedFolderCount };
-  }
+  // Process folders without parents first
+  const rootFolders = importedFolders.filter(folder => !folder.parentId);
+  const nonRootFolders = importedFolders.filter(folder => folder.parentId);
   
-  // Log some details about the folders we're processing
-  console.log('First folder in import:', importedFolders[0]);
+  console.log(`Found ${rootFolders.length} root folders and ${nonRootFolders.length} child folders`);
   
-  // Create a map to track folder dependencies and their status
-  const folderDependencies = new Map<string, Set<string>>();
-  const processedFolderIds = new Set<string>();
-  const circularDependencies = new Set<string>();
-  
-  // First pass: build dependency graph and validate folders
-  importedFolders.forEach(folder => {
-    if (!folder.id || !folder.name) {
-      console.warn('Invalid folder data:', folder);
-      return;
-    }
-    
-    // Log folder information for debugging
-    console.log(`Analyzing folder: "${folder.name}" (ID: ${folder.id}, Parent: ${folder.parentId || 'none'})`);
-    
-    if (folder.parentId) {
-      // Verify parent folder exists in the import set
-      const parentExists = importedFolders.some(f => f.id === folder.parentId);
-      if (!parentExists) {
-        console.warn(`Parent folder ${folder.parentId} not found for folder ${folder.name}`);
-        // Still track this folder, but without parent dependency
-      }
-      
-      if (!folderDependencies.has(folder.id)) {
-        folderDependencies.set(folder.id, new Set());
-      }
-      
-      if (parentExists) {
-        folderDependencies.get(folder.id)?.add(folder.parentId as string);
-      }
-    }
-  });
-  
-  // Function to detect circular dependencies using DFS
-  const detectCircularDependencies = (folderId: string, visited: Set<string>, path: Set<string>) => {
-    if (path.has(folderId)) {
-      // Found a circular dependency
-      console.warn(`Circular dependency detected with folder ID: ${folderId}`);
-      path.forEach(id => circularDependencies.add(id));
-      return true;
-    }
-    
-    if (visited.has(folderId)) {
-      return false;
-    }
-    
-    visited.add(folderId);
-    path.add(folderId);
-    
-    const dependencies = folderDependencies.get(folderId);
-    if (dependencies) {
-      for (const depId of dependencies) {
-        if (detectCircularDependencies(depId, visited, path)) {
-          return true;
-        }
-      }
-    }
-    
-    path.delete(folderId);
-    return false;
-  };
-  
-  // Detect all circular dependencies
-  importedFolders.forEach(folder => {
-    if (!processedFolderIds.has(folder.id) && folder.id) {
-      detectCircularDependencies(folder.id, new Set(), new Set());
-    }
-  });
-  
-  if (circularDependencies.size > 0) {
-    console.warn(`Found ${circularDependencies.size} folders with circular dependencies`);
-    console.warn('Circular dependencies:', Array.from(circularDependencies));
-  }
-  
-  // Function to get folder depth (distance from root)
-  const getFolderDepth = (folderId: string, depth: number = 0, visited: Set<string> = new Set()): number => {
-    if (visited.has(folderId)) {
-      return depth;
-    }
-    visited.add(folderId);
-    
-    const dependencies = folderDependencies.get(folderId);
-    if (!dependencies || dependencies.size === 0) {
-      return depth;
-    }
-    
-    let maxDepth = depth;
-    for (const depId of dependencies) {
-      if (!circularDependencies.has(depId)) {
-        maxDepth = Math.max(maxDepth, getFolderDepth(depId, depth + 1, visited));
-      }
-    }
-    return maxDepth;
-  };
-  
-  // Sort folders by depth (shallowest first) and handle circular dependencies
-  const sortedFolders = [...importedFolders]
-    .filter(folder => folder.id && folder.name) // Filter out invalid folders
-    .sort((a, b) => {
-      // Always place root folders (no parent) first
-      if (!a.parentId && b.parentId) return -1;
-      if (a.parentId && !b.parentId) return 1;
-      
-      // If both have parents or both don't, sort by depth
-      const depthA = getFolderDepth(a.id);
-      const depthB = getFolderDepth(b.id);
-      return depthA - depthB;
-    });
-  
-  console.log(`Sorted ${sortedFolders.length} folders by hierarchy depth`);
-  
-  // Process folders in order
-  sortedFolders.forEach((folder, index) => {
+  // First, process all root folders (those without parents)
+  rootFolders.forEach(folder => {
     try {
-      let parentId: string | undefined;
-      
-      if (folder.parentId && !circularDependencies.has(folder.id)) {
-        // If parent exists and this folder isn't part of a circular dependency
-        const mappedParentId = folderIdMap.get(folder.parentId);
-        if (mappedParentId) {
-          parentId = mappedParentId;
-          console.log(`Using mapped parent ID ${mappedParentId} for folder "${folder.name}"`);
-        }
-      }
-      
-      // Create the folder
       const newFolder = addFolder(
         folder.name,
         folder.image,
-        folder.tags,
-        parentId
+        folder.tags
       );
       
-      if (!newFolder || !newFolder.id) {
-        console.error('Failed to create folder:', folder.name);
-        return;
-      }
-      
       folderIdMap.set(folder.id, newFolder.id);
-      processedFolderIds.add(folder.id);
       importedFolderCount++;
-      
-      console.log(`Created folder "${folder.name}" with ID: ${newFolder.id}${parentId ? ` under parent: ${parentId}` : ''}`);
-      
-      // Log progress for larger imports
-      if (index === 0 || index === sortedFolders.length - 1 || index % 10 === 0) {
-        console.log(`Processed folder ${index + 1}/${sortedFolders.length}`);
-      }
+      console.log(`Added root folder "${folder.name}" with ID ${newFolder.id} (was ${folder.id})`);
     } catch (error) {
-      console.error(`Error creating folder "${folder.name}":`, error);
+      const errorMsg = `Error importing root folder "${folder.name}": ${error instanceof Error ? error.message : String(error)}`;
+      console.error(errorMsg);
+      errors.push(errorMsg);
     }
   });
   
-  // Log summary
-  console.log(`Successfully processed ${importedFolderCount} out of ${importedFolders.length} folders`);
-  console.log(`Created ${folderIdMap.size} folder mappings`);
+  // Then try to process non-root folders with multiple passes to handle nesting
+  // This approach handles arbitrary depth of folder hierarchy
+  let remainingFolders = [...nonRootFolders];
+  let previousLength = -1;
+  let maxAttempts = 10; // Prevent infinite loops
   
-  // Return the folderIdMap and count 
-  return { folderIdMap, importedFolderCount };
+  while (remainingFolders.length > 0 && previousLength !== remainingFolders.length && maxAttempts > 0) {
+    previousLength = remainingFolders.length;
+    maxAttempts--;
+    
+    console.log(`Processing batch of ${remainingFolders.length} child folders, attempt ${10 - maxAttempts}`);
+    
+    // Try to process each folder, keep track of ones we couldn't process yet
+    const stillRemaining: Folder[] = [];
+    
+    for (const folder of remainingFolders) {
+      // Check if parent folder has been processed
+      if (!folder.parentId || folderIdMap.has(folder.parentId)) {
+        try {
+          // Get mapped parent ID if it exists
+          const mappedParentId = folder.parentId ? folderIdMap.get(folder.parentId) : undefined;
+          
+          const newFolder = addFolder(
+            folder.name,
+            folder.image,
+            folder.tags,
+            mappedParentId
+          );
+          
+          folderIdMap.set(folder.id, newFolder.id);
+          importedFolderCount++;
+          console.log(`Added child folder "${folder.name}" with ID ${newFolder.id} ${mappedParentId ? `under parent ${mappedParentId}` : '(missing parent)'}`);
+        } catch (error) {
+          const errorMsg = `Error importing child folder "${folder.name}": ${error instanceof Error ? error.message : String(error)}`;
+          console.error(errorMsg);
+          errors.push(errorMsg);
+        }
+      } else {
+        // Can't process yet, parent hasn't been created
+        stillRemaining.push(folder);
+      }
+    }
+    
+    remainingFolders = stillRemaining;
+  }
+  
+  // If we still have folders left, they have circular dependencies
+  if (remainingFolders.length > 0) {
+    console.warn(`Could not import ${remainingFolders.length} folders due to circular dependencies or missing parents`);
+    errors.push(`${remainingFolders.length} folders had circular dependencies or missing parents and were skipped.`);
+    
+    // Import these without parent relationships as a fallback
+    remainingFolders.forEach(folder => {
+      try {
+        const newFolder = addFolder(
+          folder.name,
+          folder.image,
+          folder.tags
+          // No parent ID - we're breaking the circular dependency
+        );
+        
+        folderIdMap.set(folder.id, newFolder.id);
+        importedFolderCount++;
+        console.log(`Added orphaned folder "${folder.name}" with ID ${newFolder.id} (original parent relationship broken)`);
+      } catch (error) {
+        const errorMsg = `Error importing orphaned folder "${folder.name}": ${error instanceof Error ? error.message : String(error)}`;
+        console.error(errorMsg);
+        errors.push(errorMsg);
+      }
+    });
+  }
+  
+  console.log(`Folder processing complete. Imported ${importedFolderCount}/${importedFolders.length} folders.`);
+  
+  return { folderIdMap, importedFolderCount, errors };
 };

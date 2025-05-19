@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { Bookmark, Folder } from '@/lib/bookmarkUtils';
+import { useToast } from '@/hooks/use-toast';
+import { Bookmark, Folder } from '@/lib/types';
 import { parseHTMLBookmarks, processJSONBookmarks } from '@/lib/importExportUtils';
 import { Loader2 } from 'lucide-react';
+import ImportErrorDialog from './ImportErrorDialog';
 
 interface ImportBookmarksProps {
   onImportBookmarks?: (bookmarks: Bookmark[], folders?: Folder[]) => void;
@@ -15,6 +16,8 @@ interface ImportBookmarksProps {
 const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, isImporting = false }) => {
   const { toast } = useToast();
   const [processingFile, setProcessingFile] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
 
   // Function to handle file import with better error handling and logs
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>, format: 'json' | 'html') => {
@@ -43,6 +46,9 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
             importResults = processJSONBookmarks(importedData);
           } catch (error) {
             console.error('JSON parsing error:', error);
+            const errorMsg = `Invalid JSON format: ${error instanceof Error ? error.message : String(error)}`;
+            setImportError(errorMsg);
+            setIsErrorDialogOpen(true);
             toast({
               title: "Import Error",
               description: "Invalid JSON format. Please check your file.",
@@ -62,9 +68,11 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
         
         if (importResults.error) {
           console.error('Import error:', importResults.error);
+          setImportError(importResults.error);
+          setIsErrorDialogOpen(true);
           toast({
             title: "Import Error",
-            description: importResults.error,
+            description: "Error during import. See details for more information.",
             variant: "destructive",
           });
           setProcessingFile(false);
@@ -72,11 +80,18 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
         }
         
         console.log(`Import parsed: ${importResults.bookmarks.length} bookmarks, ${importResults.folders.length} folders`);
-        if (importResults.bookmarks.length > 0) {
-          console.log('First few bookmarks:', importResults.bookmarks.slice(0, 3));
-        }
-        if (importResults.folders.length > 0) {
-          console.log('First few folders:', importResults.folders.slice(0, 3));
+        
+        // Show warning if nothing was imported
+        if (importResults.bookmarks.length === 0 && importResults.folders.length === 0) {
+          setImportError("No valid bookmarks or folders were found in the file. Verify that the file contains valid bookmarks in the expected format.");
+          setIsErrorDialogOpen(true);
+          toast({
+            title: "Import Error",
+            description: "No valid bookmarks found in the file.",
+            variant: "destructive",
+          });
+          setProcessingFile(false);
+          return;
         }
         
         if (importResults.bookmarks.length > 0 || importResults.folders.length > 0) {
@@ -84,18 +99,14 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
             // Pass both bookmarks and folders for processing
             onImportBookmarks(importResults.bookmarks, importResults.folders);
           }
-        } else {
-          toast({
-            title: "Import Error",
-            description: "No valid bookmarks found in the file. Please check the format.",
-            variant: "destructive",
-          });
         }
       } catch (error) {
         console.error("Import error:", error);
+        setImportError(`Error importing file: ${error instanceof Error ? error.message : String(error)}`);
+        setIsErrorDialogOpen(true);
         toast({
           title: "Import Error",
-          description: `Error importing file: ${error instanceof Error ? error.message : String(error)}`,
+          description: "Error importing file. See details for more information.",
           variant: "destructive",
         });
       }
@@ -107,9 +118,11 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
     
     reader.onerror = () => {
       console.error("FileReader error");
+      setImportError("Failed to read the file. The file may be corrupted or too large.");
+      setIsErrorDialogOpen(true);
       toast({
         title: "Import Error",
-        description: "Failed to read the file. The file may be corrupted.",
+        description: "Failed to read the file.",
         variant: "destructive",
       });
       setProcessingFile(false);
@@ -171,6 +184,13 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
         Supports HTML exports from Chrome, Firefox, and Safari browsers, or JSON exports from Tagmarked.
       </p>
+      
+      {/* Error Dialog */}
+      <ImportErrorDialog
+        open={isErrorDialogOpen}
+        onOpenChange={setIsErrorDialogOpen}
+        errorDetails={importError || ""}
+      />
     </div>
   );
 };

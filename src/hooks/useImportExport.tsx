@@ -1,6 +1,6 @@
 
 import { useCallback } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Bookmark, Folder } from '@/lib/types';
 import { processFolders } from '@/lib/folderImportUtils';
 
@@ -34,9 +34,10 @@ export const useImportExport = (
     });
   }, [toast]);
 
-  // Handle importing bookmarks and folders with enhanced logging
+  // Handle importing bookmarks and folders with enhanced logging and error handling
   const handleImportBookmarks = useCallback((importedBookmarks: Bookmark[], importedFolders: Folder[] = []) => {
     console.log(`Starting import of ${importedBookmarks.length} bookmarks and ${importedFolders.length} folders`);
+    const errors: string[] = [];
     
     // Log the first few items for debugging
     if (importedBookmarks.length > 0) {
@@ -53,84 +54,136 @@ export const useImportExport = (
     // Skip processing if both arrays are empty
     if (importedBookmarks.length === 0 && importedFolders.length === 0) {
       console.warn('No bookmarks or folders to import');
+      const errorMsg = "No valid bookmarks or folders found to import.";
+      errors.push(errorMsg);
       toast({
         title: "Import Error",
-        description: "No valid bookmarks or folders found to import.",
+        description: errorMsg,
         variant: "destructive",
       });
-      return;
+      
+      // Throw to signal error to parent components
+      throw new Error(errorMsg);
     }
     
-    // Process the folders first to maintain hierarchy
-    const { folderIdMap, importedFolderCount } = processFolders(importedFolders, addFolder);
-    
-    // Check for circular dependencies
-    if (importedFolderCount < importedFolders.length) {
-      console.warn(`Some folders were not imported due to circular dependencies. Imported: ${importedFolderCount}/${importedFolders.length}`);
-      toast({
-        title: "Folder Structure Warning",
-        description: "Some folders had circular references and were imported without parent relationships.",
-        variant: "destructive",
-      });
-    }
-    
-    // Track how many bookmarks we've successfully imported
-    let importedBookmarkCount = 0;
-    
-    // Now import bookmarks and map folder IDs
-    console.log('Processing bookmarks with mapped folder IDs');
-    importedBookmarks.forEach((bookmark, index) => {
-      try {
-        // Map the folder ID if it exists
-        const mappedFolderId = bookmark.folderId && folderIdMap.has(bookmark.folderId) 
-          ? folderIdMap.get(bookmark.folderId) 
-          : undefined;
-        
-        if (mappedFolderId) {
-          console.log(`Mapping bookmark "${bookmark.title}" from folder ID ${bookmark.folderId} to ${mappedFolderId}`);
-        }
-          
-        // Create the bookmark with the mapped folder ID
-        const newBookmark = addBookmark(
-          bookmark.title,
-          bookmark.url,
-          bookmark.thumbnail,
-          bookmark.tags,
-          mappedFolderId
-        );
-        
-        if (index < 5 || index % 50 === 0) {
-          console.log(`Added bookmark ${index+1}/${importedBookmarks.length}: "${bookmark.title}" with ID ${newBookmark.id}`);
-        }
-        
-        importedBookmarkCount++;
-      } catch (error) {
-        console.error(`Error importing bookmark "${bookmark.title}":`, error);
+    try {
+      // Process the folders first to maintain hierarchy
+      const { folderIdMap, importedFolderCount, errors: folderErrors } = processFolders(importedFolders, addFolder);
+      
+      if (folderErrors.length > 0) {
+        errors.push(...folderErrors);
       }
-    });
-    
-    console.log(`Import completed. Added ${importedBookmarkCount} bookmarks and ${importedFolderCount} folders.`);
-    
-    // Set a flag that we just imported
-    setJustImported(true);
-    setTimeout(() => setJustImported(false), 5000);
-    
-    // Refresh to ensure everything is displayed
-    refreshBookmarks();
-    
-    // Show success toast with count details
-    toast({
-      title: "Import completed",
-      description: `Added ${importedBookmarkCount} bookmarks and ${importedFolderCount} folders.`,
-    });
-    
-    // If no items were imported, show a warning
-    if (importedBookmarkCount === 0 && importedFolderCount === 0) {
-      toast({
-        title: "Import Warning",
-        description: "No bookmarks or folders could be imported. Check file format.",
-        variant: "destructive",
+      
+      // Check for circular dependencies
+      if (importedFolderCount < importedFolders.length) {
+        const warningMsg = `Some folders were not imported due to circular dependencies. Imported: ${importedFolderCount}/${importedFolders.length}`;
+        console.warn(warningMsg);
+        errors.push(warningMsg);
+        toast({
+          title: "Folder Structure Warning",
+          description: "Some folders had circular references and were imported without parent relationships.",
+          variant: "destructive",
+        });
+      }
+      
+      // Track how many bookmarks we've successfully imported
+      let importedBookmarkCount = 0;
+      const bookmarkErrors: string[] = [];
+      
+      // Now import bookmarks and map folder IDs
+      console.log('Processing bookmarks with mapped folder IDs');
+      importedBookmarks.forEach((bookmark, index) => {
+        try {
+          // Map the folder ID if it exists
+          const mappedFolderId = bookmark.folderId && folderIdMap.has(bookmark.folderId) 
+            ? folderIdMap.get(bookmark.folderId) 
+            : undefined;
+          
+          if (mappedFolderId) {
+            console.log(`Mapping bookmark "${bookmark.title}" from folder ID ${bookmark.folderId} to ${mappedFolderId}`);
+          }
+            
+          // Create the bookmark with the mapped folder ID
+          const newBookmark = addBookmark(
+            bookmark.title,
+            bookmark.url,
+            bookmark.thumbnail,
+            bookmark.tags,
+            mappedFolderId
+          );
+          
+          if (index < 5 || index % 50 === 0) {
+            console.log(`Added bookmark ${index+1}/${importedBookmarks.length}: "${bookmark.title}" with ID ${newBookmark.id}`);
+          }
+          
+          importedBookmarkCount++;
+        } catch (error) {
+          const errorMsg = `Error importing bookmark "${bookmark.title}": ${error instanceof Error ? error.message : String(error)}`;
+          console.error(errorMsg);
+          bookmarkErrors.push(errorMsg);
+        }
       });
+      
+      // Add bookmark errors to the main errors array
+      if (bookmarkErrors.length > 0) {
+        errors.push(`Failed to import ${bookmarkErrors.length} bookmarks.`);
+        if (bookmarkErrors.length < 5) {
+          errors.push(...bookmarkErrors);
+        } else {
+          errors.push(...bookmarkErrors.slice(0, 5));
+          errors.push(`...and ${bookmarkErrors.length - 5} more bookmark import errors.`);
+        }
+      }
+      
+      console.log(`Import completed. Added ${importedBookmarkCount} bookmarks and ${importedFolderCount} folders.`);
+      
+      // Set a flag that we just imported
+      setJustImported(true);
+      setTimeout(() => setJustImported(false), 5000);
+      
+      // Refresh to ensure everything is displayed
+      refreshBookmarks();
+      
+      // Show success toast with count details and any warnings
+      if (errors.length > 0 && (importedBookmarkCount > 0 || importedFolderCount > 0)) {
+        toast({
+          title: "Import completed with warnings",
+          description: `Added ${importedBookmarkCount} bookmarks and ${importedFolderCount} folders, but encountered some issues.`,
+          variant: "warning",
+        });
+        
+        // Throw to signal partial success but with errors
+        throw new Error(`Import completed with ${errors.length} issues:\n${errors.join('\n')}`);
+      } else if (errors.length === 0) {
+        toast({
+          title: "Import completed",
+          description: `Added ${importedBookmarkCount} bookmarks and ${importedFolderCount} folders.`,
+        });
+      }
+      
+      // If no items were imported, show a warning
+      if (importedBookmarkCount === 0 && importedFolderCount === 0) {
+        const errorMsg = "No bookmarks or folders could be imported. Check file format.";
+        errors.push(errorMsg);
+        toast({
+          title: "Import Warning",
+          description: errorMsg,
+          variant: "destructive",
+        });
+        
+        // Throw to signal error to parent components
+        throw new Error(errorMsg);
+      }
+    } catch (error) {
+      // Pass the error up to be displayed in the dialog
+      console.error('Import process error:', error);
+      
+      // Check if this is our own error with details, otherwise add it to errors
+      if (!(error instanceof Error && errors.length > 0)) {
+        errors.push(`Import process error: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      
+      throw new Error(errors.join('\n'));
     }
   }, [addBookmark, addFolder, refreshBookmarks, setCurrentFolderId, setJustImported, setSelectedTags, toast]);
 
