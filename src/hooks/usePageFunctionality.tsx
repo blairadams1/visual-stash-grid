@@ -99,21 +99,90 @@ export const usePageFunctionality = () => {
 
   // Handle importing bookmarks and folders
   const handleImportBookmarks = (importedBookmarks: Bookmark[], importedFolders: Folder[] = []) => {
-    // Add folders first
-    importedFolders.forEach(folder => {
-      addFolder(folder.name, folder.image, folder.tags);
-    });
-    
-    // Then add bookmarks
-    importedBookmarks.forEach(bookmark => {
-      addBookmark(
-        bookmark.title,
-        bookmark.url,
-        bookmark.thumbnail,
-        bookmark.tags,
-        bookmark.folderId
-      );
-    });
+    // Process folders first to maintain hierarchy
+    if (importedFolders.length > 0) {
+      console.log(`Importing ${importedFolders.length} folders...`);
+      
+      // Process folders in order (parents first)
+      const processedFolderIds = new Set<string>();
+      const folderIdMap = new Map<string, string>(); // Map old folder IDs to new ones
+      
+      // First pass: add folders without parent dependencies
+      importedFolders
+        .filter(folder => !folder.parentId || !importedFolders.some(f => f.id === folder.parentId))
+        .forEach(folder => {
+          const newFolder = addFolder(
+            folder.name, 
+            folder.image, 
+            folder.tags
+          );
+          
+          folderIdMap.set(folder.id, newFolder.id);
+          processedFolderIds.add(folder.id);
+        });
+      
+      // Second pass: add folders with parent dependencies
+      let remainingFolders = importedFolders.filter(folder => !processedFolderIds.has(folder.id));
+      while (remainingFolders.length > 0) {
+        const initialLength = remainingFolders.length;
+        
+        for (let i = 0; i < remainingFolders.length; i++) {
+          const folder = remainingFolders[i];
+          
+          // If this folder has a parent that's been processed
+          if (!folder.parentId || processedFolderIds.has(folder.parentId)) {
+            // Map parent ID if it exists
+            const parentId = folder.parentId ? folderIdMap.get(folder.parentId) : undefined;
+            
+            const newFolder = addFolder(
+              folder.name, 
+              folder.image, 
+              folder.tags,
+              parentId
+            );
+            
+            folderIdMap.set(folder.id, newFolder.id);
+            processedFolderIds.add(folder.id);
+          }
+        }
+        
+        // Remove processed folders
+        remainingFolders = remainingFolders.filter(folder => !processedFolderIds.has(folder.id));
+        
+        // If we haven't made progress, break to avoid infinite loop
+        if (remainingFolders.length === initialLength) {
+          console.warn('Circular dependency detected in folder structure. Skipping remaining folders.');
+          break;
+        }
+      }
+      
+      // Now import bookmarks and map folder IDs
+      importedBookmarks.forEach(bookmark => {
+        // Map the folder ID if it exists
+        const mappedFolderId = bookmark.folderId && folderIdMap.has(bookmark.folderId) 
+          ? folderIdMap.get(bookmark.folderId) 
+          : undefined;
+          
+        addBookmark(
+          bookmark.title,
+          bookmark.url,
+          bookmark.thumbnail,
+          bookmark.tags,
+          mappedFolderId
+        );
+      });
+    } else {
+      // No folders, just import bookmarks
+      importedBookmarks.forEach(bookmark => {
+        addBookmark(
+          bookmark.title,
+          bookmark.url,
+          bookmark.thumbnail,
+          bookmark.tags,
+          bookmark.folderId
+        );
+      });
+    }
     
     // Refresh to ensure everything is displayed
     refreshBookmarks();

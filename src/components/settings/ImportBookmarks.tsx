@@ -42,8 +42,11 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks }) 
           return;
         }
         
-        if (importResults.bookmarks.length > 0) {
+        console.log(`Import results: ${importResults.bookmarks.length} bookmarks, ${importResults.folders.length} folders`);
+        
+        if (importResults.bookmarks.length > 0 || importResults.folders.length > 0) {
           if (onImportBookmarks) {
+            // First import folders to ensure correct folder structure
             onImportBookmarks(importResults.bookmarks, importResults.folders);
             toast({
               title: "Import Successful",
@@ -58,6 +61,7 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks }) 
           });
         }
       } catch (error) {
+        console.error("Import error:", error);
         toast({
           title: "Import Error",
           description: `Error importing file: ${error instanceof Error ? error.message : String(error)}`,

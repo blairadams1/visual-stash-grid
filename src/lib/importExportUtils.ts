@@ -61,16 +61,15 @@ export const generateAutomaticTags = (url: string, title: string): string[] => {
 export const parseHTMLBookmarks = (html: string) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
-  const links = doc.querySelectorAll('a');
   
   const importedBookmarks: Bookmark[] = [];
   const importedFolders: Folder[] = [];
-  const folderMap: Record<string, Folder> = {};
+  const folderMap: Record<string, string> = {}; // Map HTML element IDs to folder IDs
   
-  // Process folder structure first
-  const processFolder = (element: Element, parentFolderId?: string) => {
-    // Get all direct DT children that contain folders (DL)
-    const folderItems = element.querySelectorAll(':scope > dt');
+  // Find all bookmark folders (DL elements)
+  const findFolders = () => {
+    // Get all DT elements that contain H3 (folder titles)
+    const folderItems = doc.querySelectorAll('dt');
     
     folderItems.forEach(folderItem => {
       const h3 = folderItem.querySelector('h3');
@@ -78,75 +77,97 @@ export const parseHTMLBookmarks = (html: string) => {
       
       if (h3 && dl) {
         // This is a folder
-        const folderName = h3.textContent || 'Imported Folder';
-        const newFolder = createFolder(folderName, undefined, [], importedFolders, parentFolderId);
+        const folderName = h3.textContent?.trim() || 'Imported Folder';
+        const newFolder = createFolder(folderName);
         
+        // Store the folder and map its DL element ID to its folder ID
         importedFolders.push(newFolder);
-        folderMap[dl.id || `folder_${importedFolders.length}`] = newFolder;
         
-        // Process links within this folder
-        processFolder(dl, newFolder.id);
-      } else {
-        // This might be a direct bookmark
-        const link = folderItem.querySelector('a');
-        if (link) {
-          const url = link.getAttribute('href') || '';
-          const title = link.textContent || url;
-          const tagsAttr = link.getAttribute('tags') || '';
-          
-          // Get tags from the TAGS attribute if available
-          let initialTags: string[] = [];
-          if (tagsAttr) {
-            initialTags = tagsAttr.split(',').map(tag => tag.trim());
+        // Use a unique identifier for the folder
+        const dlId = dl.id || `dl_${Math.random().toString(36).substr(2, 9)}`;
+        folderMap[dlId] = newFolder.id;
+        
+        // Look for parent folder
+        const parentDL = findParentDL(folderItem);
+        if (parentDL) {
+          const parentId = folderMap[parentDL.id || ''];
+          if (parentId) {
+            newFolder.parentId = parentId;
           }
-          
-          // Generate automatic tags if we don't have enough
-          if (initialTags.length < 3) {
-            const generatedTags = generateAutomaticTags(url, title);
-            // Combine and ensure uniqueness
-            const allTags = [...new Set([...initialTags, ...generatedTags])];
-            initialTags = allTags.slice(0, 4); // Limit to 4 tags
-          }
-          
-          const thumbnail = generateThumbnail(url);
-          const newBookmark = createBookmark(
-            title, 
-            url, 
-            thumbnail, 
-            initialTags, 
-            parentFolderId
-          );
-          
-          importedBookmarks.push(newBookmark);
         }
       }
     });
   };
   
-  // Start processing from the main DL element
-  const mainDL = doc.querySelector('dl');
-  if (mainDL) {
-    processFolder(mainDL);
-  } else {
-    // Fallback to just grabbing all links if structure doesn't match expected format
+  // Helper function to find parent DL element
+  const findParentDL = (element: Element): Element | null => {
+    let parent = element.parentElement;
+    while (parent) {
+      if (parent.tagName === 'DL') {
+        return parent;
+      }
+      parent = parent.parentElement;
+    }
+    return null;
+  };
+  
+  // Get all bookmarks (A elements)
+  const findBookmarks = () => {
+    const links = doc.querySelectorAll('a');
+    
     links.forEach(link => {
-      const url = link.getAttribute('href') || '';
-      const title = link.textContent || url;
-      const tags = generateAutomaticTags(url, title);
+      const url = link.getAttribute('href');
+      if (!url) return;
+      
+      const title = link.textContent?.trim() || url;
+      const tagsAttr = link.getAttribute('tags') || '';
+      
+      // Get tags from the TAGS attribute if available
+      let tags: string[] = [];
+      if (tagsAttr) {
+        tags = tagsAttr.split(',').map(tag => tag.trim());
+      }
+      
+      // Generate automatic tags if we don't have enough
+      if (tags.length < 3) {
+        const generatedTags = generateAutomaticTags(url, title);
+        // Combine and ensure uniqueness
+        tags = [...new Set([...tags, ...generatedTags])];
+      }
+      
       const thumbnail = generateThumbnail(url);
       
+      // Find parent folder
+      let folderId: string | undefined = undefined;
+      const parentDL = findParentDL(link);
+      if (parentDL) {
+        folderId = folderMap[parentDL.id || ''];
+      }
+      
+      // Create the bookmark
       const newBookmark = createBookmark(
         title, 
         url, 
         thumbnail, 
-        tags
+        tags, 
+        folderId
       );
       
       importedBookmarks.push(newBookmark);
     });
-  }
+  };
   
-  return { bookmarks: importedBookmarks, folders: importedFolders, error: null };
+  // Process folders first, then bookmarks
+  findFolders();
+  findBookmarks();
+  
+  console.log(`Parsed ${importedBookmarks.length} bookmarks and ${importedFolders.length} folders from HTML`);
+  
+  return { 
+    bookmarks: importedBookmarks, 
+    folders: importedFolders, 
+    error: null 
+  };
 };
 
 // Process imported JSON bookmarks
