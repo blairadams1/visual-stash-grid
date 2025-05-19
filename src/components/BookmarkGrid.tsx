@@ -29,6 +29,7 @@ interface BookmarkGridProps {
   currentFolderId?: string | null;
   selectedTags?: string[];
   searchQuery?: string;
+  justImported?: boolean;
 }
 
 const BookmarkGrid: React.FC<BookmarkGridProps> = ({
@@ -49,7 +50,11 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   currentFolderId = null,
   selectedTags = [],
   searchQuery = '',
+  justImported = false,
 }) => {
+  // Track that we've initialized
+  const [initialized, setInitialized] = useState(false);
+  
   // Grid reference for drag and drop operations
   const gridRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -72,17 +77,29 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     currentFolderId,
     selectedTags,
     searchQuery,
-    collections
+    collections,
+    justImported
   );
 
-  // Get filtered bookmarks and folders
-  const { bookmarks: filteredBookmarks, folders: filteredFolders } = getFilteredItems();
+  // Track the filtered items
+  const [filteredItems, setFilteredItems] = useState<{
+    bookmarks: Bookmark[],
+    folders: Folder[]
+  }>({ bookmarks: [], folders: [] });
+  
+  // Update filtered items when inputs change
+  useEffect(() => {
+    const filtered = getFilteredItems();
+    console.log(`BookmarkGrid updated with ${filtered.bookmarks.length} bookmarks and ${filtered.folders.length} folders`);
+    setFilteredItems(filtered);
+    setInitialized(true);
+  }, [bookmarks, folders, selectedCollectionId, currentFolderId, selectedTags, searchQuery, justImported, getFilteredItems]);
   
   // Combine and sort all items (folders first, then bookmarks)
   const allItems = [
-    ...filteredFolders.map(folder => ({ item: folder, type: 'folder' as const })),
-    ...filteredBookmarks.map(bookmark => ({ item: bookmark, type: 'bookmark' as const }))
-  ].sort((a, b) => a.item.order - b.item.order);
+    ...filteredItems.folders.map(folder => ({ item: folder, type: 'folder' as const })),
+    ...filteredItems.bookmarks.map(bookmark => ({ item: bookmark, type: 'bookmark' as const }))
+  ].sort((a, b) => (a.item.order || 0) - (b.item.order || 0));
   
   // Use multiselect hook
   const multiSelect = useMultiSelect<{id: string; type: string}>();
@@ -196,20 +213,35 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   // Auto-refresh when items change
   useEffect(() => {
     // This will trigger a re-render with the latest data
-    const triggerRefresh = () => {
-      if (getFilteredItems) {
-        const { bookmarks: refreshedBookmarks, folders: refreshedFolders } = getFilteredItems();
-        // The component will re-render with fresh data
-      }
+    const triggerRefresh = (event: Event) => {
+      console.log('Bookmark change event received in BookmarkGrid', event);
+      // Force re-fetch filtered items
+      const fresh = getFilteredItems();
+      setFilteredItems(fresh);
     };
     
     // Set up event listener for bookmark changes
     window.addEventListener('bookmarkChange', triggerRefresh);
+    window.addEventListener('forceBookmarkRefresh', triggerRefresh);
     
     return () => {
       window.removeEventListener('bookmarkChange', triggerRefresh);
+      window.removeEventListener('forceBookmarkRefresh', triggerRefresh);
     };
   }, [getFilteredItems]);
+
+  // Show loading state if we haven't initialized yet
+  if (!initialized) {
+    return <div className="py-8 text-center">Loading bookmarks...</div>;
+  }
+
+  // If we have no items to display
+  if (allItems.length === 0) {
+    if (bookmarks.length === 0 && folders.length === 0) {
+      return <div className="py-8 text-center text-gray-500">No bookmarks have been added yet.</div>;
+    }
+    return <div className="py-8 text-center text-gray-500">No bookmarks match the current filters.</div>;
+  }
 
   return (
     <>
@@ -237,6 +269,13 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
               <X className="h-4 w-4" /> Cancel
             </Button>
           </div>
+        </div>
+      )}
+      
+      {/* Just imported notification */}
+      {justImported && (
+        <div className="bg-green-100 border border-green-300 text-green-800 px-4 py-2 mb-4 rounded-md">
+          Import successful! Showing all imported bookmarks and folders.
         </div>
       )}
       

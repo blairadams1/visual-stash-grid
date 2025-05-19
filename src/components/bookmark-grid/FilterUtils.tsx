@@ -8,7 +8,8 @@ export const useFilterUtils = (
   currentFolderId: string | null = null,
   selectedTags: string[] = [],
   searchQuery: string = '',
-  collections: Collection[] = []
+  collections: Collection[] = [],
+  justImported: boolean = false
 ) => {
   // Function to get all subcollection IDs recursively
   const getSubCollectionIds = (parentId: string): string[] => {
@@ -25,8 +26,15 @@ export const useFilterUtils = (
 
   // Filter and group bookmarks by collection, folder, tags, and search query
   const getFilteredItems = () => {
+    // Start with all bookmarks
     let filteredBookmarks = [...bookmarks];
     let filteredFolders = [...folders];
+    
+    // If we just imported, show all bookmarks and folders
+    if (justImported) {
+      console.log('Just imported, showing all bookmarks and folders');
+      return { bookmarks: filteredBookmarks, folders: filteredFolders };
+    }
     
     // Filter by collection if selected
     if (selectedCollectionId) {
@@ -77,6 +85,8 @@ export const useFilterUtils = (
         (folder.tags && folder.tags.some(tag => tag.toLowerCase().includes(query)))
       );
     }
+    
+    console.log(`Filtered to ${filteredBookmarks.length} bookmarks and ${filteredFolders.length} folders`);
     
     return { bookmarks: filteredBookmarks, folders: filteredFolders };
   };

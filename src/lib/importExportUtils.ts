@@ -57,11 +57,14 @@ export const generateAutomaticTags = (url: string, title: string): string[] => {
   return Array.from(tags).slice(0, 4);
 };
 
-// Parse HTML bookmarks file - completely rewritten for better folder structure handling
+// Parse HTML bookmarks file - improved to handle folder structures better
 export const parseHTMLBookmarks = (html: string) => {
   console.log('Starting HTML bookmark parsing...');
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
+  
+  // Debug DOM parsing
+  console.log('DOM parsing complete. Document elements:', doc.documentElement.childNodes.length);
   
   const importedBookmarks: Bookmark[] = [];
   const importedFolders: Map<string, Folder> = new Map(); // Use a map for easier reference
@@ -70,18 +73,23 @@ export const parseHTMLBookmarks = (html: string) => {
   // First find all folders (DT elements with H3 and DL)
   const findFolders = () => {
     console.log('Finding folders...');
-    const folderItems = Array.from(doc.querySelectorAll('dt'));
     
-    folderItems.forEach(dt => {
+    // Find all DT elements that could be folders
+    const folderItems = Array.from(doc.querySelectorAll('dt'));
+    console.log(`Found ${folderItems.length} potential folder elements`);
+    
+    folderItems.forEach((dt, index) => {
       const h3 = dt.querySelector('h3');
       const dl = dt.querySelector('dl');
       
       if (h3 && dl) {
-        const folderName = h3.textContent?.trim() || 'Imported Folder';
+        const folderName = h3.textContent?.trim() || `Imported Folder ${index}`;
         const folderId = `folder-${Math.random().toString(36).substr(2, 9)}`;
         
-        // Create the folder
+        // Create the folder with a unique name and ID
         const newFolder = createFolder(folderName);
+        
+        console.log(`Created folder: "${folderName}" with ID: ${newFolder.id}`);
         
         // Store the folder and its HTML element ID for reference
         importedFolders.set(folderId, newFolder);
@@ -96,12 +104,13 @@ export const parseHTMLBookmarks = (html: string) => {
           if (parentFolderId) {
             // Remember this relationship to set parentId after all folders are created
             folderRelationships.set(folderId, parentFolderId);
+            console.log(`Folder "${folderName}" has parent folder ID: ${parentFolderId}`);
           }
         }
       }
     });
     
-    console.log(`Found ${importedFolders.size} folders`);
+    console.log(`Created ${importedFolders.size} folders`);
   };
   
   // Helper function to find parent DL element
@@ -121,8 +130,11 @@ export const parseHTMLBookmarks = (html: string) => {
     console.log('Processing folder relationships...');
     folderRelationships.forEach((parentId, childId) => {
       const childFolder = importedFolders.get(childId);
-      if (childFolder) {
-        childFolder.parentId = importedFolders.get(parentId)?.id;
+      const parentFolder = importedFolders.get(parentId);
+      
+      if (childFolder && parentFolder) {
+        childFolder.parentId = parentFolder.id;
+        console.log(`Set folder "${childFolder.name}" parent to "${parentFolder.name}"`);
       }
     });
   };
@@ -131,10 +143,13 @@ export const parseHTMLBookmarks = (html: string) => {
   const findBookmarks = () => {
     console.log('Finding bookmarks...');
     const links = doc.querySelectorAll('a');
+    console.log(`Found ${links.length} potential bookmarks`);
     
-    links.forEach(link => {
+    links.forEach((link, index) => {
       const url = link.getAttribute('href');
-      if (!url) return;
+      if (!url || url.startsWith('javascript:') || url === '#') {
+        return;
+      }
       
       const title = link.textContent?.trim() || url;
       
@@ -152,13 +167,17 @@ export const parseHTMLBookmarks = (html: string) => {
       
       // Find parent folder
       let folderId: string | undefined = undefined;
-      const parentDL = findParentDL(link);
-      if (parentDL) {
-        const folderDataId = parentDL.getAttribute('data-folder-id');
-        if (folderDataId) {
-          const folder = importedFolders.get(folderDataId);
-          if (folder) {
-            folderId = folder.id;
+      const parentDT = link.closest('dt');
+      if (parentDT) {
+        const parentDL = findParentDL(parentDT);
+        if (parentDL) {
+          const folderDataId = parentDL.getAttribute('data-folder-id');
+          if (folderDataId) {
+            const folder = importedFolders.get(folderDataId);
+            if (folder) {
+              folderId = folder.id;
+              console.log(`Bookmark "${title}" assigned to folder "${folder.name}"`);
+            }
           }
         }
       }
@@ -172,10 +191,14 @@ export const parseHTMLBookmarks = (html: string) => {
         folderId
       );
       
+      if (index < 5 || index % 50 === 0) {
+        console.log(`Created bookmark: "${title}" with ID: ${newBookmark.id} ${folderId ? `in folder: ${folderId}` : ''}`);
+      }
+      
       importedBookmarks.push(newBookmark);
     });
     
-    console.log(`Found ${importedBookmarks.length} bookmarks`);
+    console.log(`Created ${importedBookmarks.length} bookmarks`);
   };
   
   // Process the document in order: folders first, then relationships, then bookmarks
@@ -191,7 +214,7 @@ export const parseHTMLBookmarks = (html: string) => {
   return { 
     bookmarks: importedBookmarks, 
     folders: folderArray, 
-    error: null 
+    error: importedBookmarks.length === 0 && folderArray.length === 0 ? "No valid bookmarks or folders found in the HTML" : null 
   };
 };
 
@@ -203,7 +226,7 @@ export const processJSONBookmarks = (jsonData: any) => {
   
   const importedBookmarks: Bookmark[] = [];
   
-  jsonData.forEach(item => {
+  jsonData.forEach((item, index) => {
     if (typeof item === 'object' && item !== null && item.url) {
       // Basic validation
       const url = item.url?.toString() || '';
@@ -230,6 +253,10 @@ export const processJSONBookmarks = (jsonData: any) => {
         tags, 
         item.folderId
       );
+      
+      if (index < 5 || index % 50 === 0) {
+        console.log(`Created JSON bookmark: "${title}" with ID: ${newBookmark.id}`);
+      }
       
       importedBookmarks.push(newBookmark);
     }

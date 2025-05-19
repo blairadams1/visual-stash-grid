@@ -15,6 +15,7 @@ import { Download } from 'lucide-react';
 import { Bookmark, Folder } from '@/lib/bookmarkUtils';
 import ExportBookmarks from './ExportBookmarks';
 import ImportBookmarks from './ImportBookmarks';
+import { useToast } from "@/components/ui/use-toast";
 
 interface ImportExportDialogProps {
   bookmarks: Bookmark[];
@@ -26,14 +27,35 @@ const ImportExportDialog: React.FC<ImportExportDialogProps> = ({
   onImportBookmarks 
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const { toast } = useToast();
 
   // Custom handler for import to provide feedback and close dialog when done
   const handleImport = (bookmarks: Bookmark[], folders?: Folder[]) => {
     if (onImportBookmarks) {
+      setIsImporting(true);
+      
+      // Log the import details
+      console.log(`Importing ${bookmarks.length} bookmarks and ${folders?.length || 0} folders`);
+      
+      // Perform the import
       onImportBookmarks(bookmarks, folders);
       
+      toast({
+        title: "Import successful",
+        description: `Imported ${bookmarks.length} bookmarks and ${folders?.length || 0} folders. Refreshing display...`,
+      });
+      
+      // Trigger a manual window event to force refresh
+      window.dispatchEvent(new CustomEvent('forceBookmarkRefresh', { 
+        detail: { timestamp: Date.now() } 
+      }));
+      
       // Close dialog after successful import (with slight delay)
-      setTimeout(() => setIsOpen(false), 1000);
+      setTimeout(() => {
+        setIsImporting(false);
+        setIsOpen(false);
+      }, 1500);
     }
   };
 
@@ -60,11 +82,16 @@ const ImportExportDialog: React.FC<ImportExportDialogProps> = ({
         
         <div className="grid grid-cols-1 gap-4">
           <ExportBookmarks bookmarks={bookmarks} />
-          <ImportBookmarks onImportBookmarks={handleImport} />
+          <ImportBookmarks 
+            onImportBookmarks={handleImport} 
+            isImporting={isImporting} 
+          />
         </div>
         
         <AlertDialogFooter>
-          <AlertDialogAction>Close</AlertDialogAction>
+          <AlertDialogAction disabled={isImporting}>
+            {isImporting ? "Importing..." : "Close"}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

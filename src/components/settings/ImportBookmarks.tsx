@@ -8,9 +8,10 @@ import { parseHTMLBookmarks, processJSONBookmarks } from '@/lib/importExportUtil
 
 interface ImportBookmarksProps {
   onImportBookmarks?: (bookmarks: Bookmark[], folders?: Folder[]) => void;
+  isImporting?: boolean;
 }
 
-const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks }) => {
+const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, isImporting = false }) => {
   const { toast } = useToast();
 
   // Function to handle file import with better error handling and logs
@@ -36,6 +37,7 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks }) 
           importResults = processJSONBookmarks(importedData);
         } else if (format === 'html') {
           console.log('Processing HTML import...');
+          console.log('HTML content length:', content.length);
           // Parse HTML bookmarks
           importResults = parseHTMLBookmarks(content);
         }
@@ -49,16 +51,14 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks }) 
           return;
         }
         
-        console.log(`Import results: ${importResults.bookmarks.length} bookmarks, ${importResults.folders.length} folders`);
+        console.log(`Import parsed: ${importResults.bookmarks.length} bookmarks, ${importResults.folders.length} folders`);
+        console.log('First few bookmarks:', importResults.bookmarks.slice(0, 3));
+        console.log('First few folders:', importResults.folders.slice(0, 3));
         
         if (importResults.bookmarks.length > 0 || importResults.folders.length > 0) {
           if (onImportBookmarks) {
             // Pass both bookmarks and folders for processing
             onImportBookmarks(importResults.bookmarks, importResults.folders);
-            toast({
-              title: "Import Successful",
-              description: `Imported ${importResults.bookmarks.length} bookmarks and ${importResults.folders.length} folders.`,
-            });
           }
         } else {
           toast({
@@ -88,8 +88,14 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks }) 
       <h3 className="text-sm font-semibold pt-2">Import Bookmarks</h3>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col">
-          <Button variant="outline" className="mb-2" onClick={() => document.getElementById('import-json')?.click()}>
-            <Upload className="mr-2 h-4 w-4" /> Import JSON
+          <Button 
+            variant="outline" 
+            className="mb-2" 
+            onClick={() => document.getElementById('import-json')?.click()}
+            disabled={isImporting}
+          >
+            <Upload className="mr-2 h-4 w-4" /> 
+            {isImporting ? "Importing..." : "Import JSON"}
           </Button>
           <input 
             id="import-json" 
@@ -97,12 +103,19 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks }) 
             accept=".json" 
             className="hidden" 
             onChange={(e) => handleFileImport(e, 'json')}
+            disabled={isImporting}
           />
         </div>
         
         <div className="flex flex-col">
-          <Button variant="outline" className="mb-2" onClick={() => document.getElementById('import-html')?.click()}>
-            <Upload className="mr-2 h-4 w-4" /> Import HTML
+          <Button 
+            variant="outline" 
+            className="mb-2" 
+            onClick={() => document.getElementById('import-html')?.click()}
+            disabled={isImporting}
+          >
+            <Upload className="mr-2 h-4 w-4" /> 
+            {isImporting ? "Importing..." : "Import HTML"}
           </Button>
           <input 
             id="import-html" 
@@ -110,6 +123,7 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks }) 
             accept=".html,.htm" 
             className="hidden" 
             onChange={(e) => handleFileImport(e, 'html')}
+            disabled={isImporting}
           />
         </div>
       </div>

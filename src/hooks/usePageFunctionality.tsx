@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useFolders } from '@/hooks/useFolders';
@@ -21,6 +20,9 @@ export const usePageFunctionality = () => {
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
+  
+  // State to track if we just imported bookmarks
+  const [justImported, setJustImported] = useState(false);
   
   // Presentation settings
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
@@ -47,24 +49,64 @@ export const usePageFunctionality = () => {
     }
   }, [currentFolderId, folders]);
 
+  // Listen for force refresh events
+  useEffect(() => {
+    const handleForceRefresh = (e: Event) => {
+      console.log('Received force bookmark refresh event', e);
+      refreshBookmarks();
+      
+      // Set a flag that we just imported - this will reset after 5 seconds
+      setJustImported(true);
+      setTimeout(() => setJustImported(false), 5000);
+    };
+    
+    window.addEventListener('forceBookmarkRefresh', handleForceRefresh);
+    return () => {
+      window.removeEventListener('forceBookmarkRefresh', handleForceRefresh);
+    };
+  }, []);
+
   // Force refresh bookmarks from local storage
-  const refreshBookmarks = () => {
+  const refreshBookmarks = useCallback(() => {
+    console.log('Refreshing bookmarks and folders from local storage');
+    
+    // For bookmarks
     const storedBookmarks = localStorage.getItem("bookmarks");
     if (storedBookmarks) {
-      // This will trigger a re-render through the useBookmarks hook
-      localStorage.setItem("bookmarks", storedBookmarks);
+      try {
+        // Parse to validate, then re-save with timestamp to force refresh
+        const parsedBookmarks = JSON.parse(storedBookmarks);
+        localStorage.setItem("bookmarks", JSON.stringify(parsedBookmarks));
+        
+        // Also trigger a manual event for components to react to
+        window.dispatchEvent(new CustomEvent('bookmarkChange', { 
+          detail: { timestamp: Date.now() } 
+        }));
+        
+        console.log(`Refreshed ${parsedBookmarks.length} bookmarks`);
+      } catch (e) {
+        console.error('Error parsing stored bookmarks', e);
+      }
     }
     
+    // For folders
     const storedFolders = localStorage.getItem("folders");
     if (storedFolders) {
-      // This will trigger a re-render through the useFolders hook
-      localStorage.setItem("folders", storedFolders);
+      try {
+        // Parse to validate, then re-save with timestamp to force refresh
+        const parsedFolders = JSON.parse(storedFolders);
+        localStorage.setItem("folders", JSON.stringify(parsedFolders));
+        
+        console.log(`Refreshed ${parsedFolders.length} folders`);
+      } catch (e) {
+        console.error('Error parsing stored folders', e);
+      }
     }
     
     toast({
       title: "Content refreshed",
     });
-  };
+  }, [toast]);
 
   // Handle adding a new bookmark
   const handleAddBookmark = (bookmark: Bookmark) => {
@@ -72,7 +114,7 @@ export const usePageFunctionality = () => {
     if (currentFolderId) {
       bookmark.folderId = currentFolderId;
     }
-    addBookmark(
+    const newBookmark = addBookmark(
       bookmark.title,
       bookmark.url,
       bookmark.thumbnail,
@@ -80,25 +122,42 @@ export const usePageFunctionality = () => {
       bookmark.folderId
     );
     
+    console.log(`Added bookmark "${bookmark.title}" with ID: ${newBookmark.id}`);
+    
     // Dispatch custom event to trigger grid refresh
-    window.dispatchEvent(new Event('bookmarkChange'));
+    window.dispatchEvent(new CustomEvent('bookmarkChange', { 
+      detail: { timestamp: Date.now() } 
+    }));
   };
 
   // Handle adding a new folder
   const handleAddFolder = (folderData: Partial<Folder>) => {
-    addFolder(
+    const newFolder = addFolder(
       folderData.name || "New Folder", 
       folderData.image,
       folderData.tags
     );
+    
+    console.log(`Added folder "${folderData.name}" with ID: ${newFolder.id}`);
+    
     toast({
       title: "Folder created",
     });
     setShowFolderForm(false);
   };
 
-  // Handle importing bookmarks and folders
+  // Handle importing bookmarks and folders with improved logging and debug
   const handleImportBookmarks = (importedBookmarks: Bookmark[], importedFolders: Folder[] = []) => {
+    console.log(`Starting import of ${importedBookmarks.length} bookmarks and ${importedFolders.length} folders`);
+    
+    // Clear any selected filters/tags to ensure imported items are visible
+    setSelectedTags([]);
+    setCurrentFolderId(null);
+    
+    // Track how many items we've successfully imported
+    let importedBookmarkCount = 0;
+    let importedFolderCount = 0;
+    
     // Process folders first to maintain hierarchy
     if (importedFolders.length > 0) {
       console.log(`Importing ${importedFolders.length} folders...`);
@@ -111,6 +170,8 @@ export const usePageFunctionality = () => {
       importedFolders
         .filter(folder => !folder.parentId || !importedFolders.some(f => f.id === folder.parentId))
         .forEach(folder => {
+          console.log(`Adding root folder "${folder.name}" with ID: ${folder.id}`);
+          
           const newFolder = addFolder(
             folder.name, 
             folder.image, 
@@ -119,12 +180,22 @@ export const usePageFunctionality = () => {
           
           folderIdMap.set(folder.id, newFolder.id);
           processedFolderIds.add(folder.id);
+          importedFolderCount++;
+          
+          console.log(`Mapped imported folder ID ${folder.id} to new folder ID ${newFolder.id}`);
         });
       
       // Second pass: add folders with parent dependencies
       let remainingFolders = importedFolders.filter(folder => !processedFolderIds.has(folder.id));
-      while (remainingFolders.length > 0) {
+      let iteration = 0;
+      const maxIterations = 10; // Prevent infinite loops
+      
+      while (remainingFolders.length > 0 && iteration < maxIterations) {
+        iteration++;
+        console.log(`Processing remaining folders: ${remainingFolders.length} (iteration ${iteration})`);
+        
         const initialLength = remainingFolders.length;
+        const processedThisRound = new Set<string>();
         
         for (let i = 0; i < remainingFolders.length; i++) {
           const folder = remainingFolders[i];
@@ -133,6 +204,8 @@ export const usePageFunctionality = () => {
           if (!folder.parentId || processedFolderIds.has(folder.parentId)) {
             // Map parent ID if it exists
             const parentId = folder.parentId ? folderIdMap.get(folder.parentId) : undefined;
+            
+            console.log(`Adding child folder "${folder.name}" with parent: ${parentId || 'none'}`);
             
             const newFolder = addFolder(
               folder.name, 
@@ -143,53 +216,90 @@ export const usePageFunctionality = () => {
             
             folderIdMap.set(folder.id, newFolder.id);
             processedFolderIds.add(folder.id);
+            processedThisRound.add(folder.id);
+            importedFolderCount++;
+            
+            console.log(`Mapped imported folder ID ${folder.id} to new folder ID ${newFolder.id}`);
           }
         }
         
         // Remove processed folders
-        remainingFolders = remainingFolders.filter(folder => !processedFolderIds.has(folder.id));
+        remainingFolders = remainingFolders.filter(folder => !processedThisRound.has(folder.id));
         
         // If we haven't made progress, break to avoid infinite loop
         if (remainingFolders.length === initialLength) {
-          console.warn('Circular dependency detected in folder structure. Skipping remaining folders.');
+          console.warn('Circular dependency detected in folder structure. Processing remaining folders without parents.');
+          
+          // Process remaining folders without trying to maintain parent relationships
+          remainingFolders.forEach(folder => {
+            console.log(`Adding orphaned folder "${folder.name}" without parent`);
+            const newFolder = addFolder(folder.name, folder.image, folder.tags);
+            folderIdMap.set(folder.id, newFolder.id);
+            importedFolderCount++;
+          });
+          
           break;
         }
       }
       
       // Now import bookmarks and map folder IDs
-      importedBookmarks.forEach(bookmark => {
+      console.log('Processing bookmarks with mapped folder IDs');
+      importedBookmarks.forEach((bookmark, index) => {
         // Map the folder ID if it exists
         const mappedFolderId = bookmark.folderId && folderIdMap.has(bookmark.folderId) 
           ? folderIdMap.get(bookmark.folderId) 
           : undefined;
+        
+        if (mappedFolderId) {
+          console.log(`Mapping bookmark "${bookmark.title}" from folder ID ${bookmark.folderId} to ${mappedFolderId}`);
+        }
           
-        addBookmark(
+        const newBookmark = addBookmark(
           bookmark.title,
           bookmark.url,
           bookmark.thumbnail,
           bookmark.tags,
           mappedFolderId
         );
+        
+        if (index < 5 || index % 50 === 0) {
+          console.log(`Added bookmark ${index+1}/${importedBookmarks.length}: "${bookmark.title}" with ID ${newBookmark.id}`);
+        }
+        
+        importedBookmarkCount++;
       });
     } else {
       // No folders, just import bookmarks
-      importedBookmarks.forEach(bookmark => {
-        addBookmark(
+      console.log('Importing bookmarks without folders');
+      importedBookmarks.forEach((bookmark, index) => {
+        const newBookmark = addBookmark(
           bookmark.title,
           bookmark.url,
           bookmark.thumbnail,
           bookmark.tags,
           bookmark.folderId
         );
+        
+        if (index < 5 || index % 50 === 0) {
+          console.log(`Added bookmark ${index+1}/${importedBookmarks.length}: "${bookmark.title}" with ID ${newBookmark.id}`);
+        }
+        
+        importedBookmarkCount++;
       });
     }
+    
+    console.log(`Import completed. Added ${importedBookmarkCount} bookmarks and ${importedFolderCount} folders.`);
+    
+    // Set a flag that we just imported
+    setJustImported(true);
+    setTimeout(() => setJustImported(false), 5000);
     
     // Refresh to ensure everything is displayed
     refreshBookmarks();
     
     toast({
       title: "Import completed",
-      description: `Added ${importedBookmarks.length} bookmarks and ${importedFolders.length} folders.`,
+      description: `Added ${importedBookmarkCount} bookmarks and ${importedFolderCount} folders.`,
     });
   };
 
@@ -271,6 +381,7 @@ export const usePageFunctionality = () => {
     setTheme,
     cardSize,
     setCardSize,
+    justImported,
     refreshBookmarks,
     handleAddBookmark,
     handleAddFolder,

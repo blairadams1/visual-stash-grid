@@ -29,6 +29,7 @@ const Index = () => {
     setTheme,
     cardSize,
     setCardSize,
+    justImported,
     refreshBookmarks,
     handleAddBookmark,
     handleAddFolder,
@@ -92,6 +93,7 @@ const Index = () => {
         searchQuery={searchQuery}
         cardSize={cardSize}
         theme={theme}
+        justImported={justImported}
         handleAddBookmark={handleAddBookmark}
         setShowForm={setShowForm}
         setShowFolderForm={setShowFolderForm}
