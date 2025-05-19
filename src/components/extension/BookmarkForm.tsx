@@ -7,12 +7,6 @@ import { Label } from '@/components/ui/label';
 import TagList from '@/components/extension/TagList';
 import { generateAutoTags } from '@/lib/bookmarkUtils';
 
-interface PageContext {
-  h1: string;
-  description: string;
-  content: string;
-}
-
 interface BookmarkFormProps {
   url: string;
   title: string;
@@ -20,7 +14,6 @@ interface BookmarkFormProps {
   popularTags: string[];
   isLoading: boolean;
   isSuccess: boolean;
-  pageContext?: PageContext;
 }
 
 const BookmarkForm = ({ 
@@ -29,34 +22,19 @@ const BookmarkForm = ({
   onSave, 
   popularTags, 
   isLoading, 
-  isSuccess,
-  pageContext = { h1: '', description: '', content: '' }
+  isSuccess 
 }: BookmarkFormProps) => {
   const [bookmarkUrl, setBookmarkUrl] = useState(url);
   const [bookmarkTitle, setBookmarkTitle] = useState(title);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   
-  // Auto-generate tags when URL/title changes, using enhanced context if available
+  // Auto-generate tags when URL/title changes
   useEffect(() => {
     if (url) {
-      // Create combined content for better tag generation
-      const enhancedContent = [
-        title,
-        pageContext.h1, 
-        pageContext.description,
-        pageContext.content.substring(0, 200) // Limit content length
-      ].filter(Boolean).join(' ');
-      
-      const { tags: autoTags } = generateAutoTags(url, enhancedContent, 4);
+      const { tags: autoTags } = generateAutoTags(url, title, 3);
       setTags(autoTags);
     }
-  }, [url, title, pageContext]);
-
-  // Update form fields when props change
-  useEffect(() => {
-    setBookmarkUrl(url);
-    setBookmarkTitle(title);
   }, [url, title]);
 
   const handleSubmit = async (e: React.FormEvent) => {

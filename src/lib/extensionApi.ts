@@ -45,17 +45,17 @@ export const sendMessage = async (message: ExtensionMessage): Promise<ExtensionR
       if (existingBookmarkIndex >= 0) {
         // Update existing bookmark
         const updatedBookmark = createBookmark(
-          message.bookmark.title,
           message.bookmark.url,
-          existingBookmarks[existingBookmarkIndex].thumbnail,
-          message.bookmark.tags
+          message.bookmark.title,
+          message.bookmark.tags,
+          existingBookmarks
         );
         
         // Keep the same ID and order but update other properties
         updatedBookmark.id = existingBookmarks[existingBookmarkIndex].id;
         updatedBookmark.order = existingBookmarks[existingBookmarkIndex].order;
         
-        // Handle createdAt date
+        // Handle createdAt date (may not exist in older bookmarks)
         if (existingBookmarks[existingBookmarkIndex].createdAt) {
           updatedBookmark.createdAt = existingBookmarks[existingBookmarkIndex].createdAt;
         }
@@ -76,10 +76,10 @@ export const sendMessage = async (message: ExtensionMessage): Promise<ExtensionR
       } else {
         // Create a new bookmark
         const newBookmark = createBookmark(
-          message.bookmark.title,
           message.bookmark.url,
-          undefined,
-          message.bookmark.tags
+          message.bookmark.title,
+          message.bookmark.tags,
+          existingBookmarks
         );
         
         // Add it to storage
@@ -133,18 +133,11 @@ export const getCurrentTab = async (): Promise<{ url: string; title: string } | 
   const urlParams = new URLSearchParams(window.location.search);
   const urlFromParams = urlParams.get('url');
   const titleFromParams = urlParams.get('title');
-  const h1FromParams = urlParams.get('h1');
   
   if (urlFromParams) {
-    // Use h1 as title if available and title is missing or generic
-    let bestTitle = titleFromParams || 'Bookmarked Page';
-    if (h1FromParams && (!titleFromParams || titleFromParams.includes('Home') || titleFromParams.includes('Welcome'))) {
-      bestTitle = h1FromParams;
-    }
-    
     return {
       url: urlFromParams,
-      title: bestTitle
+      title: titleFromParams || 'Bookmarked Page'
     };
   }
   

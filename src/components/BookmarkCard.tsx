@@ -1,3 +1,4 @@
+
 import { Bookmark } from "@/lib/bookmarkUtils";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,19 +12,16 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { AspectRatio } from "./ui/aspect-ratio";
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
   onTagClick: (tag: string) => void;
   onDelete: (id: string) => void;
   onUpdate?: (id: string, updates: Partial<Bookmark>) => void;
-  isSelected?: boolean; // New prop for multi-select
-  onSelect?: (id: string, isMultiSelect: boolean) => void; // New prop for selection
 }
 
 const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
-  ({ bookmark, onTagClick, onDelete, onUpdate, isSelected, onSelect }, ref) => {
+  ({ bookmark, onTagClick, onDelete, onUpdate }, ref) => {
     const [imageError, setImageError] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editedTitle, setEditedTitle] = useState(bookmark.title);
@@ -115,129 +113,85 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
       });
     };
 
-    // Handle card selection for multi-select
-    const handleCardClick = (e: React.MouseEvent) => {
-      // Only trigger selection if we have a selection handler and the click wasn't on a button or link
-      if (onSelect && !e.defaultPrevented && e.target instanceof Element) {
-        const isClickOnInteractive = ['BUTTON', 'A'].includes(e.target.tagName) ||
-                                    e.target.closest('button') !== null ||
-                                    e.target.closest('a') !== null;
-        
-        if (!isClickOnInteractive) {
-          e.preventDefault();
-          onSelect(bookmark.id, e.ctrlKey || e.metaKey || e.shiftKey);
-        }
-      }
-    };
-
-    // Different styles based on card size
-    const isSmallCard = cardSize === 'small';
-    const isMediumCard = cardSize === 'medium';
-    const isLargeCard = cardSize === 'large';
-
-    // Updated positioning classes for different card sizes - ensures content is in bottom half
-    const getContentClasses = () => {
-      if (isLargeCard) {
-        return 'bottom-0 left-0 right-0 px-4 py-5 pb-8 translate-y-[-15%]';
-      } else if (isMediumCard) {
-        return 'bottom-0 left-0 right-0 p-3 pb-3';
-      } else {
-        // For small cards, position text at the bottom 40% of the card
-        return 'bottom-0 left-0 right-0 p-2 pb-2 h-[40%]';
-      }
-    };
-
-    const titleClass = isLargeCard 
-      ? 'text-base font-medium mb-2' 
-      : isSmallCard 
-        ? 'text-xs font-medium mb-1 line-clamp-1' 
-        : 'text-sm font-medium mb-1 line-clamp-1';
-
-    // Determine how many tags to show based on card size
-    const visibleTags = isLargeCard ? 8 : isMediumCard ? 4 : 2;
-
-    // Updated gradient overlay - starts from the middle of the card for better text contrast
-    const gradientOverlayClass = "absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent";
+    // Object-fit property based on card size
+    const objectFitStyle = cardSize === 'small' ? 'object-top' : 'object-cover';
 
     return (
       <>
         <Card
           ref={ref}
-          className={`group relative overflow-hidden rounded-lg shadow-md h-full w-full cursor-grab active:cursor-grabbing ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
-          onClick={handleCardClick}
+          className="group relative overflow-hidden rounded-lg shadow-md h-52 cursor-grab active:cursor-grabbing"
         >
-          <AspectRatio ratio={3/2}>
-            <div className="absolute inset-0">
-              <img
-                src={imageError ? generatePlaceholderThumbnail() : bookmark.thumbnail}
-                alt={bookmark.title}
-                onError={handleImageError}
-                className="w-full h-full object-cover"
+          <div className="absolute inset-0">
+            <img
+              src={imageError ? generatePlaceholderThumbnail() : bookmark.thumbnail}
+              alt={bookmark.title}
+              onError={handleImageError}
+              className={`w-full h-full ${objectFitStyle}`}
+            />
+            
+            {/* Gradient overlay */}
+            <div className="absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-t from-black/80 to-transparent">
+              <a
+                href={bookmark.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute inset-0"
               />
-              
-              {/* Improved gradient overlay - starts from middle of card */}
-              <div className={gradientOverlayClass}>
-                <a
-                  href={bookmark.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="absolute inset-0"
-                />
-              </div>
+            </div>
 
-              {/* Settings button - left side */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-bookmark-blue/20 text-white hover:bg-bookmark-blue/40 p-1.5 h-8 w-8 backdrop-blur-sm"
-                onClick={handleSettingsClick}
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
+            {/* Settings button - left side */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity bg-bookmark-blue/20 text-white hover:bg-bookmark-blue/40 p-1.5 h-8 w-8 backdrop-blur-sm"
+              onClick={handleSettingsClick}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
 
-              {/* Content overlay - improved positioning based on card size */}
-              <div className={`absolute ${getContentClasses()} text-white z-10`}>
-                <h3 className={titleClass}>
-                  {bookmark.title}
-                </h3>
-                <div className="flex flex-wrap gap-1">
-                  {bookmark.tags.slice(0, visibleTags).map((tag) => (
-                    <Button
-                      key={tag}
-                      variant="outline"
-                      size="sm"
-                      className={`h-6 px-2 ${isSmallCard ? 'text-[10px]' : 'text-xs'} bg-black/20 hover:bg-bookmark-blue text-white border-white/20 hover:text-white hover:border-transparent`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onTagClick(tag);
-                      }}
-                    >
-                      {tag}
-                    </Button>
-                  ))}
-                  {bookmark.tags.length > visibleTags && (
-                    <span className={`${isSmallCard ? 'text-[10px]' : 'text-xs'} text-gray-300 flex items-center`}>
-                      +{bookmark.tags.length - visibleTags}
-                    </span>
-                  )}
-                </div>
-                
-                {/* Notes indicator if present */}
-                {bookmark.notes && isLargeCard && (
-                  <div className="mt-2 text-xs text-gray-300">
-                    <span className="bg-white/20 px-1 py-0.5 rounded">Note</span>
-                  </div>
+            {/* Content overlay */}
+            <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+              <h3 className="text-sm font-medium line-clamp-1 mb-2">
+                {bookmark.title}
+              </h3>
+              <div className="flex flex-wrap gap-1">
+                {bookmark.tags.slice(0, 5).map((tag) => (
+                  <Button
+                    key={tag}
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-xs bg-black/20 hover:bg-bookmark-blue text-white border-white/20 hover:text-white hover:border-transparent"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onTagClick(tag);
+                    }}
+                  >
+                    {tag}
+                  </Button>
+                ))}
+                {bookmark.tags.length > 5 && (
+                  <span className="text-xs text-gray-300 flex items-center">
+                    +{bookmark.tags.length - 5}
+                  </span>
                 )}
               </div>
+              
+              {/* Notes indicator if present */}
+              {bookmark.notes && (
+                <div className="mt-2 text-xs text-gray-300">
+                  <span className="bg-white/20 px-1 py-0.5 rounded">Note</span>
+                </div>
+              )}
             </div>
-          </AspectRatio>
+          </div>
 
           {/* Delete button - right side */}
           <Button
             variant="destructive"
             size="sm"
-            className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();

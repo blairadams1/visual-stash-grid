@@ -1,15 +1,9 @@
 
-import { Bookmark, Collection, Folder } from "@/lib/types";
-import { useState, useRef, useEffect } from "react";
+import { Bookmark, Collection, Folder } from "@/lib/bookmarkUtils";
+import BookmarkCard from "./BookmarkCard";
+import FolderCard from "./FolderCard";
+import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import GridItem from "./bookmark-grid/GridItem";
-import { useFilterUtils } from "./bookmark-grid/FilterUtils";
-import { getColumnClasses, getCardHeightClasses } from "./bookmark-grid/LayoutUtils";
-import { useDragDrop, DragDropHandler } from "./bookmark-grid/DragDropHandler";
-import { TouchHandler } from "./bookmark-grid/TouchHandler";
-import { useMultiSelect } from "@/hooks/useMultiSelect";
-import { Button } from "./ui/button";
-import { Trash2, X } from "lucide-react";
 
 interface BookmarkGridProps {
   bookmarks: Bookmark[];
@@ -27,9 +21,6 @@ interface BookmarkGridProps {
   layout?: 'grid' | 'list' | 'compact';
   cardSize?: string;
   currentFolderId?: string | null;
-  selectedTags?: string[];
-  searchQuery?: string;
-  justImported?: boolean;
 }
 
 const BookmarkGrid: React.FC<BookmarkGridProps> = ({
@@ -48,274 +39,292 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   layout = 'grid',
   cardSize = 'medium',
   currentFolderId = null,
-  selectedTags = [],
-  searchQuery = '',
-  justImported = false,
 }) => {
-  // Track that we've initialized
-  const [initialized, setInitialized] = useState(false);
-  
-  // Grid reference for drag and drop operations
-  const gridRef = useRef<HTMLDivElement>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [targetIndex, setTargetIndex] = useState<number | null>(null);
+  const [draggedType, setDraggedType] = useState<'bookmark' | 'folder' | null>(null);
+  const [draggedOverFolder, setDraggedOverFolder] = useState<string | null>(null);
   const isMobile = useIsMobile();
   
-  // Use our custom hooks
-  const { 
-    draggedItem, 
-    setDraggedItem, 
-    dropIndicator, 
-    setDropIndicator, 
-    draggedOverFolder, 
-    setDraggedOverFolder 
-  } = useDragDrop();
-
-  // Get the filtering utility
-  const { getFilteredItems } = useFilterUtils(
-    bookmarks,
-    folders,
-    selectedCollectionId,
-    currentFolderId,
-    selectedTags,
-    searchQuery,
-    collections,
-    justImported
-  );
-
-  // Track the filtered items
-  const [filteredItems, setFilteredItems] = useState<{
-    bookmarks: Bookmark[],
-    folders: Folder[]
-  }>({ bookmarks: [], folders: [] });
-  
-  // Update filtered items when inputs change
+  // Add a class to the body when dragging to prevent scrolling
   useEffect(() => {
-    const filtered = getFilteredItems();
-    console.log(`BookmarkGrid updated with ${filtered.bookmarks.length} bookmarks and ${filtered.folders.length} folders`);
-    setFilteredItems(filtered);
-    setInitialized(true);
-  }, [bookmarks, folders, selectedCollectionId, currentFolderId, selectedTags, searchQuery, justImported, getFilteredItems]);
+    if (draggedIndex !== null) {
+      document.body.classList.add('dragging');
+    } else {
+      document.body.classList.remove('dragging');
+    }
+    
+    return () => {
+      document.body.classList.remove('dragging');
+    };
+  }, [draggedIndex]);
+
+  // Function to handle drag start for bookmarks
+  const handleDragStart = (index: number, event: React.DragEvent, type: 'bookmark' | 'folder') => {
+    setDraggedIndex(index);
+    setDraggedType(type);
+    
+    // Set drag preview image (clone of the dragged element)
+    if (event.dataTransfer) {
+      // Cast the currentTarget to HTMLElement to access offsetWidth and offsetHeight
+      const draggedElement = event.currentTarget as HTMLElement;
+      const clone = draggedElement.cloneNode(true) as HTMLElement;
+      
+      // Style the clone
+      clone.style.width = `${draggedElement.offsetWidth}px`;
+      clone.style.height = `${draggedElement.offsetHeight}px`;
+      clone.style.opacity = '0.6';
+      clone.style.position = 'absolute';
+      clone.style.top = '-1000px';
+      clone.style.left = '-1000px';
+      clone.style.border = '2px dashed #3b82f6';
+      clone.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+      clone.style.borderRadius = '8px';
+      
+      // Append clone to document body, set as drag image, then remove
+      document.body.appendChild(clone);
+      event.dataTransfer.setDragImage(clone, draggedElement.offsetWidth / 2, draggedElement.offsetHeight / 2);
+      
+      setTimeout(() => {
+        document.body.removeChild(clone);
+      }, 0);
+    }
+  };
+
+  // Function to handle drag over
+  const handleDragOver = (event: React.DragEvent, index: number, type: 'bookmark' | 'folder' = 'bookmark', id?: string) => {
+    event.preventDefault();
+    setTargetIndex(index);
+    
+    // If dragging over a folder, highlight it as a drop target
+    if (type === 'folder' && id) {
+      setDraggedOverFolder(id);
+    } else {
+      setDraggedOverFolder(null);
+    }
+  };
+
+  // Function to handle drag end
+  const handleDragEnd = () => {
+    if (draggedType === 'bookmark' && draggedIndex !== null) {
+      // If bookmark is dropped on a folder
+      if (draggedOverFolder !== null) {
+        const draggedBookmark = bookmarks[draggedIndex];
+        onMoveToFolder(draggedBookmark.id, draggedOverFolder);
+      } 
+      // If bookmark is reordered within the grid
+      else if (targetIndex !== null && draggedIndex !== targetIndex) {
+        // Create a copy of the bookmarks array
+        const updatedBookmarks = [...bookmarks];
+        
+        // Get the bookmark that is being dragged
+        const draggedBookmark = updatedBookmarks[draggedIndex];
+        
+        // Remove the bookmark from the old position
+        updatedBookmarks.splice(draggedIndex, 1);
+        
+        // Insert the bookmark at the new position
+        updatedBookmarks.splice(targetIndex, 0, draggedBookmark);
+        
+        // Update the order property
+        const reorderedBookmarks = updatedBookmarks.map((bookmark, index) => ({
+          ...bookmark,
+          order: index,
+        }));
+        
+        // Update the state in the parent component
+        onBookmarksReordered(reorderedBookmarks);
+      }
+    }
+    
+    // Reset drag state
+    setDraggedIndex(null);
+    setTargetIndex(null);
+    setDraggedType(null);
+    setDraggedOverFolder(null);
+  };
+
+  // Touch events handling for mobile
+  const [touchStartIndex, setTouchStartIndex] = useState<number | null>(null);
+  const [touchEndIndex, setTouchEndIndex] = useState<number | null>(null);
+  const [touchType, setTouchType] = useState<'bookmark' | 'folder' | null>(null);
+  const [touchOverFolder, setTouchOverFolder] = useState<string | null>(null);
+
+  const handleTouchStart = (index: number, type: 'bookmark' | 'folder') => {
+    setTouchStartIndex(index);
+    setTouchType(type);
+  };
+
+  const handleTouchMove = (event: React.TouchEvent, index: number, type: 'bookmark' | 'folder' = 'bookmark', id?: string) => {
+    event.preventDefault();
+    if (touchStartIndex !== null && (touchStartIndex !== index || type === 'folder')) {
+      setTouchEndIndex(index);
+      if (type === 'folder' && id) {
+        setTouchOverFolder(id);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchType === 'bookmark' && touchStartIndex !== null) {
+      // If dropping onto a folder
+      if (touchOverFolder !== null) {
+        const draggedBookmark = bookmarks[touchStartIndex];
+        onMoveToFolder(draggedBookmark.id, touchOverFolder);
+      }
+      // If reordering
+      else if (touchEndIndex !== null && touchStartIndex !== touchEndIndex) {
+        // Create a copy of the bookmarks array
+        const updatedBookmarks = [...bookmarks];
+        
+        // Get the bookmark that is being dragged
+        const draggedBookmark = updatedBookmarks[touchStartIndex];
+        
+        // Remove the bookmark from the old position
+        updatedBookmarks.splice(touchStartIndex, 1);
+        
+        // Insert the bookmark at the new position
+        updatedBookmarks.splice(touchEndIndex, 0, draggedBookmark);
+        
+        // Update the order property
+        const reorderedBookmarks = updatedBookmarks.map((bookmark, index) => ({
+          ...bookmark,
+          order: index,
+        }));
+        
+        // Update the state in the parent component
+        onBookmarksReordered(reorderedBookmarks);
+      }
+    }
+    
+    // Reset touch state
+    setTouchStartIndex(null);
+    setTouchEndIndex(null);
+    setTouchType(null);
+    setTouchOverFolder(null);
+  };
+
+  // Filter and group bookmarks by collection and folder
+  const getFilteredBookmarks = () => {
+    let filtered = [...bookmarks];
+    
+    // Filter by collection if selected
+    if (selectedCollectionId) {
+      const subCollectionIds = getSubCollectionIds(selectedCollectionId);
+      filtered = filtered.filter(
+        bookmark => bookmark.collectionId === selectedCollectionId || 
+                  (bookmark.collectionId && subCollectionIds.includes(bookmark.collectionId))
+      );
+    }
+    
+    // Filter by current folder if set
+    if (currentFolderId !== null) {
+      filtered = filtered.filter(bookmark => bookmark.folderId === currentFolderId);
+    } else {
+      // If not in a folder view, only show bookmarks that are not in any folder
+      filtered = filtered.filter(bookmark => !bookmark.folderId);
+    }
+    
+    return filtered;
+  };
+  
+  // Get filtered folders based on selected collection
+  const getFilteredFolders = () => {
+    if (currentFolderId !== null) {
+      // Don't show folders when inside a folder
+      return [];
+    }
+    
+    let filtered = [...folders];
+    
+    // Filter by collection if selected
+    if (selectedCollectionId) {
+      const subCollectionIds = getSubCollectionIds(selectedCollectionId);
+      filtered = filtered.filter(
+        folder => folder.collectionId === selectedCollectionId || 
+                 (folder.collectionId && subCollectionIds.includes(folder.collectionId))
+      );
+    }
+    
+    return filtered;
+  };
+  
+  // Function to get all subcollection IDs recursively
+  const getSubCollectionIds = (parentId: string): string[] => {
+    const result: string[] = [];
+    
+    const childCollections = collections.filter(c => c.parentId === parentId);
+    childCollections.forEach(collection => {
+      result.push(collection.id);
+      result.push(...getSubCollectionIds(collection.id));
+    });
+    
+    return result;
+  };
+
+  // Get filtered bookmarks and folders
+  const filteredBookmarks = getFilteredBookmarks();
+  const filteredFolders = getFilteredFolders();
   
   // Combine and sort all items (folders first, then bookmarks)
   const allItems = [
-    ...filteredItems.folders.map(folder => ({ item: folder, type: 'folder' as const })),
-    ...filteredItems.bookmarks.map(bookmark => ({ item: bookmark, type: 'bookmark' as const }))
-  ].sort((a, b) => (a.item.order || 0) - (b.item.order || 0));
+    ...filteredFolders.map(folder => ({ item: folder, type: 'folder' as const })),
+    ...filteredBookmarks.map(bookmark => ({ item: bookmark, type: 'bookmark' as const }))
+  ].sort((a, b) => a.item.order - b.item.order);
   
-  // Use multiselect hook
-  const multiSelect = useMultiSelect<{id: string; type: string}>();
-  
-  // Set up key event listeners for keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Activate multi-select mode when Shift key is pressed
-      if (e.key === 'Shift') {
-        multiSelect.startMultiSelect();
-      }
-      
-      // Delete selected items when Delete key is pressed
-      if (e.key === 'Delete' && multiSelect.hasSelection()) {
-        handleDeleteSelected();
-      }
-      
-      // Cancel selection with Escape
-      if (e.key === 'Escape' && multiSelect.hasSelection()) {
-        multiSelect.clearSelection();
-      }
-    };
+  // Determine column count based on card size
+  const getColumnClasses = () => {
+    if (layout === 'list') return 'grid-cols-1';
     
-    const handleKeyUp = (e: KeyboardEvent) => {
-      // Deactivate multi-select mode when Shift key is released
-      if (e.key === 'Shift') {
-        multiSelect.endMultiSelect();
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [multiSelect]);
-
-  // Handle item selection
-  const handleSelectItem = (id: string, isMultiSelect: boolean, type: 'bookmark' | 'folder') => {
-    // Map IDs to their types for tracking selection
-    const itemsWithType = allItems.map(({ item, type }) => ({ id: item.id, type }));
-    multiSelect.handleSelectItem(id, isMultiSelect, itemsWithType);
-  };
-
-  // Delete selected items
-  const handleDeleteSelected = () => {
-    if (!multiSelect.hasSelection()) return;
-    
-    if (confirm(`Are you sure you want to delete ${multiSelect.selectedItems.length} selected items?`)) {
-      multiSelect.selectedItems.forEach(id => {
-        // Find the item with this ID to determine if it's a bookmark or folder
-        const itemInfo = allItems.find(item => item.item.id === id);
-        if (itemInfo) {
-          if (itemInfo.type === 'bookmark') {
-            onDeleteBookmark(id);
-          } else {
-            onDeleteFolder(id);
-          }
-        }
-      });
-      multiSelect.clearSelection();
+    switch (cardSize) {
+      case 'small':
+        return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7';
+      case 'large':
+        return 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-2';
+      default: // medium
+        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5';
     }
   };
-
-  // Get drag and drop handlers
-  const dragDropHandlers = DragDropHandler({
-    onBookmarksReordered,
-    onMoveToFolder,
-    bookmarks,
-    draggedItem, 
-    setDraggedItem,
-    dropIndicator,
-    setDropIndicator,
-    draggedOverFolder,
-    setDraggedOverFolder
-  });
-
-  // Extract the handlers from the returned object
-  const { 
-    handleDragStart, 
-    handleDragOver, 
-    handleDragEnd: baseDragEnd, 
-    handleDrop, 
-    handleDragLeave 
-  } = dragDropHandlers;
-
-  // Wrap handleDragEnd to provide getFilteredItems
-  const handleDragEnd = (event: React.DragEvent) => {
-    baseDragEnd(event, getFilteredItems);
-  };
-
-  // Get touch handlers if on mobile
-  const touchHandlers = TouchHandler({
-    onBookmarksReordered,
-    onMoveToFolder,
-    bookmarks,
-    getFilteredItems
-  });
-
-  const {
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd
-  } = touchHandlers;
-
-  // Get card height classes
-  const heightClasses = getCardHeightClasses(cardSize);
-
-  // Auto-refresh when items change
-  useEffect(() => {
-    // This will trigger a re-render with the latest data
-    const triggerRefresh = (event: Event) => {
-      console.log('Bookmark change event received in BookmarkGrid', event);
-      // Force re-fetch filtered items
-      const fresh = getFilteredItems();
-      setFilteredItems(fresh);
-    };
-    
-    // Set up event listener for bookmark changes
-    window.addEventListener('bookmarkChange', triggerRefresh);
-    window.addEventListener('forceBookmarkRefresh', triggerRefresh);
-    
-    return () => {
-      window.removeEventListener('bookmarkChange', triggerRefresh);
-      window.removeEventListener('forceBookmarkRefresh', triggerRefresh);
-    };
-  }, [getFilteredItems]);
-
-  // Show loading state if we haven't initialized yet
-  if (!initialized) {
-    return <div className="py-8 text-center">Loading bookmarks...</div>;
-  }
-
-  // If we have no items to display
-  if (allItems.length === 0) {
-    if (bookmarks.length === 0 && folders.length === 0) {
-      return <div className="py-8 text-center text-gray-500">No bookmarks have been added yet.</div>;
-    }
-    return <div className="py-8 text-center text-gray-500">No bookmarks match the current filters.</div>;
-  }
 
   return (
-    <>
-      {/* Multi-select action bar */}
-      {multiSelect.hasSelection() && (
-        <div className="sticky top-0 z-50 bg-blue-500 text-white py-2 px-4 mb-4 rounded flex items-center justify-between">
-          <div className="flex items-center">
-            <span className="font-medium">{multiSelect.selectedItems.length} items selected</span>
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              onClick={handleDeleteSelected}
-              className="flex items-center gap-1"
-            >
-              <Trash2 className="h-4 w-4" /> Delete
-            </Button>
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              onClick={() => multiSelect.clearSelection()}
-              className="flex items-center gap-1"
-            >
-              <X className="h-4 w-4" /> Cancel
-            </Button>
-          </div>
+    <div className={`grid gap-4 px-0 mx-0 ${getColumnClasses()} ${layout === 'list' ? 'bookmark-grid-list' : layout === 'compact' ? 'bookmark-grid-compact' : ''}`}>
+      {allItems.map(({ item, type }, index) => (
+        <div
+          key={item.id}
+          draggable={!isMobile}
+          onDragStart={(e) => handleDragStart(index, e, type)}
+          onDragOver={(e) => handleDragOver(e, index, type, type === 'folder' ? item.id : undefined)}
+          onDragEnd={handleDragEnd}
+          onTouchStart={() => isMobile && handleTouchStart(index, type)}
+          onTouchMove={(e) => isMobile && handleTouchMove(e, index, type, type === 'folder' ? item.id : undefined)}
+          onTouchEnd={() => isMobile && handleTouchEnd()}
+          className={`transition-transform ${
+            (draggedIndex === index && draggedType === type) ? "opacity-50 scale-105 z-10" : "opacity-100"
+          } ${
+            (targetIndex === index && draggedIndex !== index) || (type === 'folder' && draggedOverFolder === item.id)
+              ? "border-2 border-bookmark-blue ring-2 ring-bookmark-blue/30 rounded-lg shadow-lg"
+              : ""
+          }`}
+        >
+          {type === 'bookmark' ? (
+            <BookmarkCard
+              bookmark={item as Bookmark}
+              onTagClick={onTagClick}
+              onDelete={onDeleteBookmark}
+              onUpdate={onUpdateBookmark}
+            />
+          ) : (
+            <FolderCard
+              folder={item as Folder}
+              onTagClick={onTagClick}
+              onDelete={onDeleteFolder}
+              onUpdate={onUpdateFolder}
+              onDoubleClick={onOpenFolder}
+            />
+          )}
         </div>
-      )}
-      
-      {/* Just imported notification */}
-      {justImported && (
-        <div className="bg-green-100 border border-green-300 text-green-800 px-4 py-2 mb-4 rounded-md">
-          Import successful! Showing all imported bookmarks and folders.
-        </div>
-      )}
-      
-      <div 
-        ref={gridRef}
-        className={`grid gap-4 px-0 mx-0 ${getColumnClasses(layout, cardSize)} ${layout === 'list' ? 'bookmark-grid-list' : layout === 'compact' ? 'bookmark-grid-compact' : ''}`}
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={handleDrop}
-        onDragLeave={handleDragLeave}
-      >
-        {allItems.map(({ item, type }, index) => (
-          <GridItem
-            key={`${type}-${item.id}`}
-            item={item}
-            type={type}
-            index={index}
-            draggedItem={draggedItem}
-            dropIndicator={dropIndicator}
-            draggedOverFolder={draggedOverFolder}
-            isMobile={isMobile}
-            onTagClick={onTagClick}
-            onDeleteBookmark={onDeleteBookmark}
-            onUpdateBookmark={onUpdateBookmark}
-            onDeleteFolder={onDeleteFolder}
-            onUpdateFolder={onUpdateFolder}
-            onOpenFolder={onOpenFolder}
-            handleDragStart={handleDragStart}
-            handleDragOver={handleDragOver}
-            handleDragEnd={handleDragEnd}
-            handleDrop={handleDrop}
-            handleTouchStart={handleTouchStart}
-            handleTouchMove={handleTouchMove}
-            handleTouchEnd={handleTouchEnd}
-            heightClass={heightClasses}
-            isSelected={multiSelect.isItemSelected(item.id)}
-            onSelect={(id, isMultiSelect) => handleSelectItem(id, isMultiSelect, type)}
-          />
-        ))}
-      </div>
-    </>
+      ))}
+    </div>
   );
 };
 

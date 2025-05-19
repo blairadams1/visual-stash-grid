@@ -1,11 +1,12 @@
 
-import React, { useMemo, useState } from "react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Separator } from "./ui/separator";
-import { Badge } from "./ui/badge";
-import { Tag, X } from "lucide-react";
-import { useTags } from "@/hooks/useTags";
+import React, { useState, useMemo } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { Bookmark } from "@/lib/bookmarkUtils";
+import { Search, X } from "lucide-react";
 
 interface EnhancedTagSelectorProps {
   selectedTags: string[];
@@ -20,101 +21,144 @@ const EnhancedTagSelector: React.FC<EnhancedTagSelectorProps> = ({
   onTagDeselect,
   onClearAllTags,
 }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const { tags } = useTags();
-  
-  // Extract tag names from the tags array
-  const allTags = useMemo(() => tags.map(tag => tag.name), [tags]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+  const [bookmarks] = useLocalStorage<Bookmark[]>("bookmarks", []);
 
-  // Filter tags based on search term
+  // Get all unique tags from bookmarks
+  const allTags = useMemo(() => {
+    return Array.from(
+      new Set(bookmarks.flatMap((bookmark) => bookmark.tags))
+    ).sort();
+  }, [bookmarks]);
+
+  // Filter tags by search query
   const filteredTags = useMemo(() => {
+    if (!searchQuery.trim()) return allTags;
+    
     return allTags.filter((tag) =>
-      tag.toLowerCase().includes(searchTerm.toLowerCase())
+      tag.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [allTags, searchTerm]);
+  }, [allTags, searchQuery]);
+
+  // Calculate popular tags based on frequency
+  const popularTags = useMemo(() => {
+    const tagCounts = new Map<string, number>();
+    
+    bookmarks.forEach(bookmark => {
+      bookmark.tags.forEach(tag => {
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      });
+    });
+    
+    return [...tagCounts.entries()]
+      .sort((a, b) => b[1] - a[1]) // Sort by count, descending
+      .filter(([tag]) => !selectedTags.includes(tag))
+      .slice(0, 15) // Get top 15 popular tags
+      .map(([tag]) => tag);
+  }, [bookmarks, selectedTags]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        {/* Clear all button - moved to top and title removed */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClearAllTags}
-          disabled={selectedTags.length === 0}
-          className="px-2 h-8"
-        >
-          Clear All
-        </Button>
-      </div>
-
-      {/* Search input */}
-      <div className="relative">
-        <Tag className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-        <Input
-          placeholder="Search tags..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9"
-        />
-        {searchTerm && (
+        <h3 className="text-lg font-semibold">Filter by Tags</h3>
+        {selectedTags.length > 0 && (
           <Button
             variant="ghost"
             size="sm"
-            className="absolute right-1 top-1 h-7 w-7 p-0"
-            onClick={() => setSearchTerm("")}
+            onClick={onClearAllTags}
+            className="h-8 px-2"
           >
-            <X className="h-4 w-4" />
+            Clear All
           </Button>
         )}
       </div>
 
       {/* Selected tags */}
       {selectedTags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2">
+        <div className="flex flex-wrap gap-1">
           {selectedTags.map((tag) => (
             <Badge
               key={tag}
-              variant="secondary"
-              className="flex items-center gap-1 bg-blue-100 text-blue-800 hover:bg-blue-200"
+              className="bg-bookmark-blue hover:bg-bookmark-darkBlue text-white px-3 py-1 flex items-center gap-1 cursor-pointer"
+              onClick={() => onTagDeselect(tag)}
             >
               {tag}
-              <X
-                className="h-3 w-3 cursor-pointer"
-                onClick={() => onTagDeselect(tag)}
-              />
+              <X className="h-3 w-3" />
             </Badge>
           ))}
         </div>
       )}
-      
-      <Separator />
 
-      {/* All tags */}
-      <div className="flex flex-wrap gap-2 max-h-[50vh] overflow-y-auto">
-        {filteredTags.length > 0 ? (
-          filteredTags.map((tag) => (
-            <Badge
-              key={tag}
-              variant={selectedTags.includes(tag) ? "default" : "outline"}
-              className={`cursor-pointer transition-colors ${
-                selectedTags.includes(tag)
-                  ? "bg-primary text-white hover:bg-primary/90"
-                  : "hover:bg-muted"
-              }`}
-              onClick={() =>
-                selectedTags.includes(tag)
-                  ? onTagDeselect(tag)
-                  : onTagSelect(tag)
-              }
-            >
-              {tag}
-            </Badge>
-          ))
-        ) : (
-          <p className="text-gray-500 text-sm">No matching tags found</p>
-        )}
+      {/* Search input */}
+      <div className="relative">
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Search tags..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-8"
+        />
       </div>
+
+      {/* Tags tabs */}
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="all">All Tags</TabsTrigger>
+          <TabsTrigger value="popular">Popular Tags</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="all" className="mt-4">
+          <div className="flex flex-wrap gap-1 max-h-64 overflow-y-auto">
+            {filteredTags.length > 0 ? (
+              filteredTags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant={selectedTags.includes(tag) ? "default" : "outline"}
+                  className={`cursor-pointer ${
+                    selectedTags.includes(tag)
+                      ? "bg-bookmark-blue hover:bg-bookmark-darkBlue text-white flex items-center gap-1"
+                      : "border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-softBlue"
+                  }`}
+                  onClick={() =>
+                    selectedTags.includes(tag)
+                      ? onTagDeselect(tag)
+                      : onTagSelect(tag)
+                  }
+                >
+                  {tag}
+                  {selectedTags.includes(tag) && <X className="h-3 w-3" />}
+                </Badge>
+              ))
+            ) : (
+              <p className="text-sm text-gray-500 w-full text-center py-4">
+                No tags found matching your search.
+              </p>
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="popular" className="mt-4">
+          <div className="flex flex-wrap gap-1">
+            {popularTags.length > 0 ? (
+              popularTags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="outline"
+                  className="cursor-pointer border-bookmark-blue text-bookmark-darkBlue hover:bg-bookmark-softBlue"
+                  onClick={() => onTagSelect(tag)}
+                >
+                  {tag}
+                </Badge>
+              ))
+            ) : (
+              <p className="text-sm text-gray-500 w-full text-center py-4">
+                No more popular tags available.
+              </p>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

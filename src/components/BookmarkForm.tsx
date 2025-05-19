@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,12 +85,11 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({
 
       // Create bookmark
       const newBookmark = createBookmark(
-        finalTitle,
         processedUrl,
-        undefined,
+        finalTitle,
         tagArray,
-        collectionId || undefined,
-        existingBookmarks
+        existingBookmarks,
+        collectionId || undefined
       );
 
       // Add the bookmark
