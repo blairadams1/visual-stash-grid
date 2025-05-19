@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   AlertDialog,
@@ -19,11 +18,13 @@ import { useToast } from "@/components/ui/use-toast";
 
 interface ImportExportDialogProps {
   bookmarks: Bookmark[];
+  folders: Folder[];
   onImportBookmarks?: (bookmarks: Bookmark[], folders?: Folder[]) => void;
 }
 
 const ImportExportDialog: React.FC<ImportExportDialogProps> = ({ 
-  bookmarks, 
+  bookmarks,
+  folders,
   onImportBookmarks 
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -81,7 +82,7 @@ const ImportExportDialog: React.FC<ImportExportDialogProps> = ({
         </AlertDialogHeader>
         
         <div className="grid grid-cols-1 gap-4">
-          <ExportBookmarks bookmarks={bookmarks} />
+          <ExportBookmarks bookmarks={bookmarks} folders={folders} />
           <ImportBookmarks 
             onImportBookmarks={handleImport} 
             isImporting={isImporting} 

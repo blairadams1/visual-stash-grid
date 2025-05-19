@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Filter, FolderPlus, MoveLeft, Plus, RefreshCw } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -35,6 +34,7 @@ interface AppHeaderProps {
   setSearchQuery: (query: string) => void;
   handleAddFolder: (folderData: Partial<Folder>) => void;
   bookmarks: Bookmark[];
+  folders: Folder[];
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({
@@ -60,7 +60,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   handleClearAllTags,
   setSearchQuery,
   handleAddFolder,
-  bookmarks
+  bookmarks,
+  folders,
 }) => {
   return (
     <header className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow`}>
@@ -163,7 +164,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             </Sheet>
             
             <SettingsDropdown 
-              bookmarks={bookmarks} 
+              bookmarks={bookmarks}
+              folders={folders}
               onChangeTheme={onChangeTheme}
               onChangeCardSize={onChangeCardSize}
               currentTheme={theme}

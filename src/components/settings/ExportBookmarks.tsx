@@ -1,21 +1,32 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
-import { Bookmark } from '@/lib/bookmarkUtils';
+import { Bookmark, Folder } from '@/lib/bookmarkUtils';
 
 interface ExportBookmarksProps {
   bookmarks: Bookmark[];
+  folders: Folder[];
 }
 
-const ExportBookmarks: React.FC<ExportBookmarksProps> = ({ bookmarks }) => {
+const ExportBookmarks: React.FC<ExportBookmarksProps> = ({ bookmarks, folders }) => {
   // Function to export bookmarks as JSON
   const exportBookmarksAsJSON = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(bookmarks));
+    const exportData = {
+      version: "1.0",
+      bookmarks: bookmarks,
+      folders: folders,
+      metadata: {
+        exportDate: new Date().toISOString(),
+        totalBookmarks: bookmarks.length,
+        totalFolders: folders.length
+      }
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "tagmarked-bookmarks.json");
-    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.setAttribute("download", "tagmarked-export.json");
+    document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
   };
@@ -32,8 +43,33 @@ const ExportBookmarks: React.FC<ExportBookmarksProps> = ({ bookmarks }) => {
                      `<H1>Bookmarks</H1>\n` +
                      `<DL><p>\n`;
     
-    // Add each bookmark as a DT element
-    bookmarks.forEach(bookmark => {
+    // Helper function to recursively add folders and their bookmarks
+    const addFolderContent = (folder: Folder, level: number = 0) => {
+      const indent = '    '.repeat(level);
+      htmlContent += `${indent}<DT><H3 ADD_DATE="${Math.floor(Date.now() / 1000)}">${folder.name}</H3>\n`;
+      htmlContent += `${indent}<DL><p>\n`;
+      
+      // Add bookmarks in this folder
+      const folderBookmarks = bookmarks.filter(b => b.folderId === folder.id);
+      folderBookmarks.forEach(bookmark => {
+        const tags = bookmark.tags ? ` TAGS="${bookmark.tags.join(',')}"` : '';
+        htmlContent += `${indent}    <DT><A HREF="${bookmark.url}" ADD_DATE="${Math.floor(Date.now() / 1000)}"${tags}>${bookmark.title}</A>\n`;
+      });
+      
+      // Add subfolders
+      const subfolders = folders.filter(f => f.parentId === folder.id);
+      subfolders.forEach(subfolder => addFolderContent(subfolder, level + 1));
+      
+      htmlContent += `${indent}</DL><p>\n`;
+    };
+    
+    // Add root level folders (those without parents)
+    const rootFolders = folders.filter(f => !f.parentId);
+    rootFolders.forEach(folder => addFolderContent(folder));
+    
+    // Add bookmarks without folders
+    const orphanedBookmarks = bookmarks.filter(b => !b.folderId);
+    orphanedBookmarks.forEach(bookmark => {
       const tags = bookmark.tags ? ` TAGS="${bookmark.tags.join(',')}"` : '';
       htmlContent += `    <DT><A HREF="${bookmark.url}" ADD_DATE="${Math.floor(Date.now() / 1000)}"${tags}>${bookmark.title}</A>\n`;
     });

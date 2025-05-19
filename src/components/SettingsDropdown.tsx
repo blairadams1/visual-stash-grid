@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Settings, FolderTree } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,7 @@ import BookmarkletInstall from './BookmarkletInstall';
 
 interface SettingsDropdownProps {
   bookmarks: Bookmark[];
+  folders: Folder[];
   onChangeTheme: (theme: 'light' | 'dark') => void;
   onChangeCardSize: (size: 'small' | 'medium' | 'large') => void;
   currentTheme: 'light' | 'dark';
@@ -30,6 +30,7 @@ interface SettingsDropdownProps {
 
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
   bookmarks,
+  folders,
   onChangeTheme,
   onChangeCardSize,
   currentTheme,
@@ -86,7 +87,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
           
           {/* Import/Export dialog */}
           <ImportExportDialog 
-            bookmarks={bookmarks} 
+            bookmarks={bookmarks}
+            folders={folders}
             onImportBookmarks={onImportBookmarks} 
           />
         </DropdownMenuContent>

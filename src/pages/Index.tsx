@@ -1,4 +1,3 @@
-
 import { usePageFunctionality } from "@/hooks/usePageFunctionality";
 import MainLayout from "@/components/layout/MainLayout";
 import AppHeader from "@/components/header/AppHeader";
@@ -80,6 +79,7 @@ const Index = () => {
         setSearchQuery={setSearchQuery}
         handleAddFolder={handleAddFolder}
         bookmarks={bookmarks}
+        folders={folders}
       />
       
       <BookmarkContent
