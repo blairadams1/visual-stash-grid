@@ -1,11 +1,12 @@
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Bookmark, Folder } from '@/lib/types';
 import { processFolders } from '@/lib/folderImportUtils';
+import { ImportStats } from '@/components/settings/ImportResultsDialog';
 
 /**
- * Hook for import/export functionality with improved error handling
+ * Hook for import/export functionality with improved error handling and statistics
  */
 export const useImportExport = (
   addBookmark: (title: string, url: string, thumbnail?: string, tags?: string[], folderId?: string) => Bookmark,
@@ -15,6 +16,8 @@ export const useImportExport = (
   setJustImported: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   const { toast } = useToast();
+  const [importStats, setImportStats] = useState<ImportStats | null>(null);
+  const [showResultsDialog, setShowResultsDialog] = useState(false);
 
   // Force refresh bookmarks from local storage
   const refreshBookmarks = useCallback(() => {
@@ -37,7 +40,31 @@ export const useImportExport = (
   // Handle importing bookmarks and folders with enhanced logging and error handling
   const handleImportBookmarks = useCallback((importedBookmarks: Bookmark[], importedFolders: Folder[] = []) => {
     console.log(`Starting import of ${importedBookmarks.length} bookmarks and ${importedFolders.length} folders`);
+    
+    const startTime = Date.now();
     const errors: string[] = [];
+    const warnings: string[] = [];
+    const bookmarkErrors: string[] = [];
+    const folderErrors: string[] = [];
+    
+    // Initialize stats object
+    const stats: ImportStats = {
+      bookmarks: {
+        total: importedBookmarks.length,
+        imported: 0,
+        failed: 0,
+        errors: []
+      },
+      folders: {
+        total: importedFolders.length,
+        imported: 0,
+        failed: 0,
+        errors: []
+      },
+      warningCount: 0,
+      warnings: [],
+      elapsedTime: 0
+    };
     
     // Log the first few items for debugging
     if (importedBookmarks.length > 0) {
@@ -62,33 +89,45 @@ export const useImportExport = (
         variant: "destructive",
       });
       
+      stats.bookmarks.errors = bookmarkErrors;
+      stats.folders.errors = folderErrors;
+      stats.warnings = warnings;
+      stats.warningCount = warnings.length;
+      stats.elapsedTime = Date.now() - startTime;
+      
+      setImportStats(stats);
+      setShowResultsDialog(true);
+      
       // Throw to signal error to parent components
       throw new Error(errorMsg);
     }
     
     try {
       // Process the folders first to maintain hierarchy
-      const { folderIdMap, importedFolderCount, errors: folderErrors } = processFolders(importedFolders, addFolder);
+      const { folderIdMap, importedFolderCount, errors: processFolderErrors } = processFolders(importedFolders, addFolder);
       
-      if (folderErrors.length > 0) {
-        errors.push(...folderErrors);
+      // Update folder stats
+      stats.folders.imported = importedFolderCount;
+      stats.folders.failed = importedFolders.length - importedFolderCount;
+      
+      if (processFolderErrors.length > 0) {
+        folderErrors.push(...processFolderErrors);
       }
       
       // Check for circular dependencies
       if (importedFolderCount < importedFolders.length) {
         const warningMsg = `Some folders were not imported due to circular dependencies. Imported: ${importedFolderCount}/${importedFolders.length}`;
         console.warn(warningMsg);
-        errors.push(warningMsg);
+        warnings.push(warningMsg);
         toast({
           title: "Folder Structure Warning",
           description: "Some folders had circular references and were imported without parent relationships.",
-          variant: "destructive",
+          variant: "warning",
         });
       }
       
       // Track how many bookmarks we've successfully imported
       let importedBookmarkCount = 0;
-      const bookmarkErrors: string[] = [];
       
       // Now import bookmarks and map folder IDs
       console.log('Processing bookmarks with mapped folder IDs');
@@ -124,6 +163,10 @@ export const useImportExport = (
         }
       });
       
+      // Update bookmark stats
+      stats.bookmarks.imported = importedBookmarkCount;
+      stats.bookmarks.failed = importedBookmarks.length - importedBookmarkCount;
+      
       // Add bookmark errors to the main errors array
       if (bookmarkErrors.length > 0) {
         errors.push(`Failed to import ${bookmarkErrors.length} bookmarks.`);
@@ -135,11 +178,22 @@ export const useImportExport = (
         }
       }
       
+      // Finalize stats
+      stats.bookmarks.errors = bookmarkErrors;
+      stats.folders.errors = folderErrors;
+      stats.warnings = warnings;
+      stats.warningCount = warnings.length;
+      stats.elapsedTime = Date.now() - startTime;
+      
       console.log(`Import completed. Added ${importedBookmarkCount} bookmarks and ${importedFolderCount} folders.`);
       
-      // Set a flag that we just imported
+      // Set a flag that we just imported - increase the timeout to 15 seconds
       setJustImported(true);
-      setTimeout(() => setJustImported(false), 5000);
+      setTimeout(() => setJustImported(false), 15000);
+      
+      // Save the import stats and show the results dialog
+      setImportStats(stats);
+      setShowResultsDialog(true);
       
       // Refresh to ensure everything is displayed
       refreshBookmarks();
@@ -183,12 +237,31 @@ export const useImportExport = (
         errors.push(`Import process error: ${error instanceof Error ? error.message : String(error)}`);
       }
       
+      // Update stats with any errors
+      if (!stats.bookmarks.errors?.length) {
+        stats.bookmarks.errors = bookmarkErrors;
+      }
+      if (!stats.folders.errors?.length) {
+        stats.folders.errors = folderErrors;
+      }
+      if (!stats.warnings?.length) {
+        stats.warnings = warnings;
+      }
+      stats.warningCount = (stats.warnings || []).length;
+      stats.elapsedTime = Date.now() - startTime;
+      
+      setImportStats(stats);
+      setShowResultsDialog(true);
+      
       throw new Error(errors.join('\n'));
     }
   }, [addBookmark, addFolder, refreshBookmarks, setCurrentFolderId, setJustImported, setSelectedTags, toast]);
 
   return {
     refreshBookmarks,
-    handleImportBookmarks
+    handleImportBookmarks,
+    importStats,
+    showResultsDialog,
+    setShowResultsDialog
   };
 };

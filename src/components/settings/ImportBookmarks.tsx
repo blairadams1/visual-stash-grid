@@ -1,11 +1,10 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload } from 'lucide-react';
+import { Upload, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Bookmark, Folder } from '@/lib/types';
 import { parseHTMLBookmarks, processJSONBookmarks } from '@/lib/importExportUtils';
-import { Loader2 } from 'lucide-react';
 import ImportErrorDialog from './ImportErrorDialog';
 
 interface ImportBookmarksProps {
@@ -95,6 +94,11 @@ const ImportBookmarks: React.FC<ImportBookmarksProps> = ({ onImportBookmarks, is
         }
         
         if (importResults.bookmarks.length > 0 || importResults.folders.length > 0) {
+          toast({
+            title: "Parsing Complete",
+            description: `Found ${importResults.bookmarks.length} bookmarks and ${importResults.folders.length} folders. Starting import...`,
+          });
+          
           if (onImportBookmarks) {
             // Pass both bookmarks and folders for processing
             onImportBookmarks(importResults.bookmarks, importResults.folders);

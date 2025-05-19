@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Settings, FolderTree } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,8 @@ import CardSizeSelector from './settings/CardSizeSelector';
 import ImportExportDialog from './settings/ImportExportDialog';
 import TagManagerDialog from './settings/TagManagerDialog';
 import BookmarkletInstall from './BookmarkletInstall';
+import { useImportExport } from '@/hooks/useImportExport';
+import ImportResultsDialog from './settings/ImportResultsDialog';
 
 interface SettingsDropdownProps {
   bookmarks: Bookmark[];
@@ -26,6 +29,7 @@ interface SettingsDropdownProps {
   currentCardSize: 'small' | 'medium' | 'large';
   onToggleSidebar: () => void;
   onImportBookmarks?: (bookmarks: Bookmark[], folders?: Folder[]) => void;
+  setCurrentFolderId?: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
@@ -37,8 +41,23 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
   currentCardSize,
   onToggleSidebar,
   onImportBookmarks,
+  setCurrentFolderId
 }) => {
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
+  
+  // Get the import stats and dialog functionality
+  const { 
+    importStats, 
+    showResultsDialog, 
+    setShowResultsDialog 
+  } = useImportExport;
+  
+  // Function to navigate to a folder
+  const handleNavigateToFolder = (folderId: string | null) => {
+    if (setCurrentFolderId) {
+      setCurrentFolderId(folderId);
+    }
+  };
   
   return (
     <>
@@ -89,10 +108,21 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
           <ImportExportDialog 
             bookmarks={bookmarks}
             folders={folders}
-            onImportBookmarks={onImportBookmarks} 
+            onImportBookmarks={onImportBookmarks}
+            onNavigateToFolder={handleNavigateToFolder} 
           />
         </DropdownMenuContent>
       </DropdownMenu>
+      
+      {/* Import results dialog */}
+      {importStats && (
+        <ImportResultsDialog
+          open={showResultsDialog}
+          onOpenChange={setShowResultsDialog}
+          stats={importStats}
+          onNavigateToFolder={handleNavigateToFolder}
+        />
+      )}
     </>
   );
 };

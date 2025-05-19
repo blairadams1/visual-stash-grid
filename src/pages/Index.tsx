@@ -1,7 +1,10 @@
+
 import { usePageFunctionality } from "@/hooks/usePageFunctionality";
 import MainLayout from "@/components/layout/MainLayout";
 import AppHeader from "@/components/header/AppHeader";
 import BookmarkContent from "@/components/content/BookmarkContent";
+import { useImportExport } from "@/hooks/useImportExport";
+import ImportResultsDialog from "@/components/settings/ImportResultsDialog";
 
 const Index = () => {
   // Use our custom hook to access all functionality
@@ -47,6 +50,29 @@ const Index = () => {
     reorderBookmarks
   } = usePageFunctionality();
 
+  // Get the import stats and dialog functionality
+  const { 
+    importStats, 
+    showResultsDialog, 
+    setShowResultsDialog 
+  } = useImportExport(
+    handleAddBookmark,
+    handleAddFolder,
+    setSelectedTags,
+    setCurrentFolderId,
+    (value) => {
+      if (typeof value === 'function') {
+        return setJustImported(value(justImported)); 
+      }
+      return setJustImported(value);
+    }
+  );
+
+  // Function to navigate to a folder
+  const handleNavigateToFolder = (folderId: string | null) => {
+    setCurrentFolderId(folderId);
+  };
+
   return (
     <MainLayout
       showSidebar={showSidebar}
@@ -80,6 +106,7 @@ const Index = () => {
         handleAddFolder={handleAddFolder}
         bookmarks={bookmarks}
         folders={folders}
+        setCurrentFolderId={setCurrentFolderId}
       />
       
       <BookmarkContent
@@ -108,6 +135,16 @@ const Index = () => {
         refreshBookmarks={refreshBookmarks}
         getCurrentPageInfo={getCurrentPageInfo}
       />
+      
+      {/* Import results dialog */}
+      {importStats && (
+        <ImportResultsDialog
+          open={showResultsDialog}
+          onOpenChange={setShowResultsDialog}
+          stats={importStats}
+          onNavigateToFolder={handleNavigateToFolder}
+        />
+      )}
     </MainLayout>
   );
 };

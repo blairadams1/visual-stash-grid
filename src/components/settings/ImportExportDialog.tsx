@@ -17,17 +17,21 @@ import ExportBookmarks from './ExportBookmarks';
 import ImportBookmarks from './ImportBookmarks';
 import { useToast } from "@/hooks/use-toast";
 import ImportErrorDialog from './ImportErrorDialog';
+import ImportResultsDialog from './ImportResultsDialog';
+import { useImportExport } from '@/hooks/useImportExport';
 
 interface ImportExportDialogProps {
   bookmarks: Bookmark[];
   folders: Folder[];
   onImportBookmarks?: (bookmarks: Bookmark[], folders?: Folder[]) => void;
+  onNavigateToFolder?: (folderId: string | null) => void;
 }
 
 const ImportExportDialog: React.FC<ImportExportDialogProps> = ({ 
   bookmarks,
   folders,
-  onImportBookmarks 
+  onImportBookmarks,
+  onNavigateToFolder
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -48,8 +52,8 @@ const ImportExportDialog: React.FC<ImportExportDialogProps> = ({
         onImportBookmarks(bookmarks, folders);
         
         toast({
-          title: "Import successful",
-          description: `Imported ${bookmarks.length} bookmarks and ${folders?.length || 0} folders. Refreshing display...`,
+          title: "Import processing",
+          description: `Processing ${bookmarks.length} bookmarks and ${folders?.length || 0} folders...`,
         });
         
         // Trigger a manual window event to force refresh
