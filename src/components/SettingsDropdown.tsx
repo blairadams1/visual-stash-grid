@@ -45,12 +45,20 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
 }) => {
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
   
-  // Get the import stats and dialog functionality
-  const { 
-    importStats, 
-    showResultsDialog, 
-    setShowResultsDialog 
-  } = useImportExport;
+  // Pass dummy functions since we don't need real functionality here
+  const dummyAddBookmark = () => ({ id: '', title: '', url: '', createdAt: new Date() });
+  const dummyAddFolder = () => ({ id: '', name: '', createdAt: new Date() });
+  const dummySetSelectedTags = () => {};
+  const dummySetCurrentFolderId = () => {};
+  const dummySetJustImported = () => {};
+  
+  const importExportUtils = useImportExport(
+    dummyAddBookmark,
+    dummyAddFolder,
+    dummySetSelectedTags,
+    dummySetCurrentFolderId,
+    dummySetJustImported
+  );
   
   // Function to navigate to a folder
   const handleNavigateToFolder = (folderId: string | null) => {
@@ -115,11 +123,11 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
       </DropdownMenu>
       
       {/* Import results dialog */}
-      {importStats && (
+      {importExportUtils && importExportUtils.importStats && (
         <ImportResultsDialog
-          open={showResultsDialog}
-          onOpenChange={setShowResultsDialog}
-          stats={importStats}
+          open={importExportUtils.showResultsDialog}
+          onOpenChange={importExportUtils.setShowResultsDialog}
+          stats={importExportUtils.importStats}
           onNavigateToFolder={handleNavigateToFolder}
         />
       )}

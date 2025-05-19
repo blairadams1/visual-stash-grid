@@ -14,6 +14,7 @@ const Index = () => {
     searchQuery,
     setSearchQuery,
     selectedTags,
+    setSelectedTags,  // Ensure this is properly destructured
     showForm,
     setShowForm,
     showFolderForm,
@@ -32,6 +33,7 @@ const Index = () => {
     cardSize,
     setCardSize,
     justImported,
+    setJustImported,  // Ensure this is properly destructured
     refreshBookmarks,
     handleAddBookmark,
     handleAddFolder,
@@ -60,12 +62,7 @@ const Index = () => {
     handleAddFolder,
     setSelectedTags,
     setCurrentFolderId,
-    (value) => {
-      if (typeof value === 'function') {
-        return setJustImported(value(justImported)); 
-      }
-      return setJustImported(value);
-    }
+    setJustImported
   );
 
   // Function to navigate to a folder
@@ -106,7 +103,6 @@ const Index = () => {
         handleAddFolder={handleAddFolder}
         bookmarks={bookmarks}
         folders={folders}
-        setCurrentFolderId={setCurrentFolderId}
       />
       
       <BookmarkContent
