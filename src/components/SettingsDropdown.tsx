@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { Settings, Palette, FileText, Moon, Sun } from 'lucide-react';
+import { Settings, Palette, FileText, Moon, Sun, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
   DropdownMenu,
@@ -23,12 +24,24 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import BookmarkletInstall from './BookmarkletInstall';
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Bookmark, Folder } from '@/lib/bookmarkUtils';
 
 interface SettingsDropdownProps {
-  bookmarks: any[];
+  bookmarks: Bookmark[];
+  folders: Folder[];
   onChangeTheme: (theme: 'light' | 'dark') => void;
   onChangeCardSize: (size: 'small' | 'medium' | 'large') => void;
   currentTheme: 'light' | 'dark';
@@ -37,6 +50,7 @@ interface SettingsDropdownProps {
 
 const SettingsDropdown = ({ 
   bookmarks, 
+  folders,
   onChangeTheme, 
   onChangeCardSize,
   currentTheme,
@@ -46,6 +60,7 @@ const SettingsDropdown = ({
   const [bookmarkletDialogOpen, setBookmarkletDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importHtmlFile, setImportHtmlFile] = useState<File | null>(null);
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const { toast } = useToast();
 
   // Import/export functionality
@@ -85,7 +100,50 @@ const SettingsDropdown = ({
     }
   };
 
-  const handleImportBookmarks = () => {
+  // Function to capture screenshots of bookmarks
+  const captureScreenshot = async (url: string): Promise<string> => {
+    try {
+      // Try to get a screenshot via a simple API
+      const response = await fetch(`https://api.apiflash.com/v1/urltoimage?access_key=6ece774766ff420e8c453f54f264bbaf&url=${encodeURIComponent(url)}&width=800&height=600&ttl=2592000`);
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        return URL.createObjectURL(blob);
+      } else {
+        console.log(`Failed to capture screenshot for ${url}, falling back to favicon`);
+        return `https://www.google.com/s2/favicons?domain=${url}&sz=128`;
+      }
+    } catch (error) {
+      console.error(`Error capturing screenshot for ${url}:`, error);
+      return `https://www.google.com/s2/favicons?domain=${url}&sz=128`;
+    }
+  };
+
+  // Helper to find or create a folder
+  const findOrCreateFolder = (folderName: string, existingFolders: Folder[], newFolders: Folder[]): string => {
+    // First check existing folders
+    const existingFolder = existingFolders.find(f => f.name === folderName);
+    if (existingFolder) return existingFolder.id;
+    
+    // Then check new folders we've created during this import
+    const newFolder = newFolders.find(f => f.name === folderName);
+    if (newFolder) return newFolder.id;
+    
+    // If not found, create a new folder with a new ID
+    const folderId = `folder-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    newFolders.push({
+      id: folderId,
+      name: folderName,
+      image: '/lovable-uploads/80ac03c8-9e22-4604-a202-1c5c73c568eb.png',
+      tags: [],
+      order: existingFolders.length + newFolders.length + 1,
+      createdAt: new Date(),
+    });
+    
+    return folderId;
+  };
+
+  const handleImportBookmarks = async () => {
     if (!importFile) {
       toast({
         title: "No file selected",
@@ -97,7 +155,7 @@ const SettingsDropdown = ({
 
     const reader = new FileReader();
     
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const importedData = JSON.parse(event.target?.result as string);
         
@@ -106,15 +164,74 @@ const SettingsDropdown = ({
           throw new Error("Invalid import format");
         }
         
-        // Store the imported bookmarks in localStorage
-        localStorage.setItem("bookmarks", JSON.stringify(importedData));
+        toast({
+          title: "Import started",
+          description: "Importing bookmarks and capturing screenshots...",
+        });
+        
+        // Get existing bookmarks and folders
+        const existingBookmarks = JSON.parse(localStorage.getItem("bookmarks") || "[]");
+        const existingFolders = JSON.parse(localStorage.getItem("folders") || "[]");
+        
+        const newFolders: Folder[] = [];
+        const newBookmarks = [...existingBookmarks];
+        const highestOrder = Math.max(...existingBookmarks.map((b: any) => b.order || 0), 0);
+        
+        // Process each bookmark
+        for (let i = 0; i < importedData.length; i++) {
+          const bookmark = importedData[i];
+          
+          // Skip if bookmark already exists with same URL
+          if (existingBookmarks.some((b: Bookmark) => b.url === bookmark.url)) {
+            continue;
+          }
+          
+          // Try to capture screenshot
+          const thumbnail = await captureScreenshot(bookmark.url);
+          
+          // Handle folder assignments
+          let folderId = undefined;
+          if (bookmark.folderId || bookmark.folderName) {
+            // If the bookmark has a folder name, find or create the folder
+            if (bookmark.folderName) {
+              folderId = findOrCreateFolder(bookmark.folderName, existingFolders, newFolders);
+            }
+            // If it has a folderId, check if that folder exists, otherwise ignore
+            else if (bookmark.folderId) {
+              const folderExists = existingFolders.some((f: Folder) => f.id === bookmark.folderId) || 
+                                 newFolders.some(f => f.id === bookmark.folderId);
+              if (folderExists) {
+                folderId = bookmark.folderId;
+              }
+            }
+          }
+          
+          // Create new bookmark
+          const newBookmark = {
+            ...bookmark,
+            id: bookmark.id || `bookmark-${Date.now()}-${i}`,
+            thumbnail: thumbnail,
+            order: highestOrder + i + 1,
+            folderId: folderId
+          };
+          
+          newBookmarks.push(newBookmark);
+        }
+        
+        // Store the imported bookmarks and new folders in localStorage
+        localStorage.setItem("bookmarks", JSON.stringify(newBookmarks));
+        
+        if (newFolders.length > 0) {
+          const updatedFolders = [...existingFolders, ...newFolders];
+          localStorage.setItem("folders", JSON.stringify(updatedFolders));
+        }
         
         setImportExportDialogOpen(false);
         setImportFile(null);
         
         toast({
           title: "Import successful",
-          description: `${importedData.length} bookmarks have been imported`,
+          description: `${newBookmarks.length - existingBookmarks.length} bookmarks and ${newFolders.length} folders have been imported`,
         });
         
         // Refresh the page to show the imported bookmarks
@@ -132,7 +249,7 @@ const SettingsDropdown = ({
     reader.readAsText(importFile);
   };
 
-  const handleImportHtmlBookmarks = () => {
+  const handleImportHtmlBookmarks = async () => {
     if (!importHtmlFile) {
       toast({
         title: "No file selected",
@@ -143,18 +260,26 @@ const SettingsDropdown = ({
     }
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const htmlContent = event.target?.result as string;
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlContent, 'text/html');
         
+        toast({
+          title: "Import started",
+          description: "Parsing HTML bookmarks and capturing screenshots...",
+        });
+        
         // Extract bookmarks from HTML
         const links = doc.querySelectorAll('a');
         const existingBookmarks = JSON.parse(localStorage.getItem("bookmarks") || "[]");
+        const existingFolders = JSON.parse(localStorage.getItem("folders") || "[]");
         
         let importCount = 0;
+        let folderCount = 0;
         const newBookmarks = [...existingBookmarks];
+        const newFolders: Folder[] = [];
         const highestOrder = Math.max(...existingBookmarks.map((b: any) => b.order || 0), 0);
         
         // Extract all unique folder names for auto-tagging
@@ -191,7 +316,8 @@ const SettingsDropdown = ({
           'bbc.com': ['news', 'reading']
         };
         
-        links.forEach((link, index) => {
+        for (let i = 0; i < links.length; i++) {
+          const link = links[i];
           const url = link.getAttribute('href');
           const title = link.textContent || url || 'Untitled Bookmark';
           const dateAdded = link.getAttribute('add_date');
@@ -203,11 +329,16 @@ const SettingsDropdown = ({
             if (!exists) {
               // Get tags from parent folders
               let tags: string[] = [];
+              let folderName: string | null = null;
               let parent = link.parentElement;
-              while (parent && parent.tagName !== 'DL') {
-                if (parent.tagName === 'H3') {
-                  const folderName = parent.textContent;
+              
+              // Navigate up to find folder heading
+              while (parent && parent.tagName !== 'BODY') {
+                if (parent.tagName === 'DL' && parent.previousElementSibling && parent.previousElementSibling.tagName === 'H3') {
+                  const heading = parent.previousElementSibling;
+                  folderName = heading.textContent;
                   if (folderName) tags.push(folderName.trim());
+                  break;
                 }
                 parent = parent.parentElement;
               }
@@ -233,7 +364,6 @@ const SettingsDropdown = ({
                 }
                 
                 // Add path segments as tags if they seem meaningful
-                // (not too short, not just IDs or numbers)
                 const pathSegments = urlObj.pathname.split('/')
                   .filter(segment => 
                     segment.length > 3 && 
@@ -255,32 +385,46 @@ const SettingsDropdown = ({
                 .map(tag => tag.toLowerCase().trim())
                 .slice(0, 8); // Limit to 8 tags per bookmark
               
+              // Try to capture screenshot
+              const thumbnail = await captureScreenshot(url);
+              
+              // Determine folder ID if needed
+              let folderId: string | undefined = undefined;
+              if (folderName) {
+                folderId = findOrCreateFolder(folderName, existingFolders, newFolders);
+              }
+              
               // Create new bookmark
               const newBookmark = {
-                id: `bookmark-${Date.now()}-${index}`,
+                id: `bookmark-${Date.now()}-${i}`,
                 title: title,
                 url: url,
-                thumbnail: `https://www.google.com/s2/favicons?domain=${url}&sz=128`,
+                thumbnail: thumbnail,
                 tags: tags,
-                order: highestOrder + index + 1,
-                dateAdded: dateAdded ? new Date(parseInt(dateAdded) * 1000).toISOString() : new Date().toISOString()
+                order: highestOrder + i + 1,
+                dateAdded: dateAdded ? new Date(parseInt(dateAdded) * 1000).toISOString() : new Date().toISOString(),
+                folderId: folderId
               };
               
               newBookmarks.push(newBookmark);
               importCount++;
             }
           }
-        });
+        }
         
-        // Save all bookmarks back to localStorage
+        // Save all bookmarks and folders back to localStorage
         localStorage.setItem("bookmarks", JSON.stringify(newBookmarks));
+        if (newFolders.length > 0) {
+          localStorage.setItem("folders", JSON.stringify([...existingFolders, ...newFolders]));
+          folderCount = newFolders.length;
+        }
         
         setImportExportDialogOpen(false);
         setImportHtmlFile(null);
         
         toast({
           title: "HTML Import successful",
-          description: `${importCount} bookmarks have been imported with automatic tags`,
+          description: `${importCount} bookmarks and ${folderCount} folders have been imported with automatic tags`,
         });
         
         // Refresh the page to show the imported bookmarks
@@ -312,36 +456,45 @@ const SettingsDropdown = ({
 <DL><p>
 `;
       
-      // Create a map of tags to bookmarks
-      const tagMap = new Map<string, any[]>();
+      // Create a map of folders to bookmarks
+      const folderMap = new Map<string, Bookmark[]>();
       
-      // Add bookmarks with no tags to a default folder
-      const noTagBookmarks = bookmarks.filter(b => !b.tags || b.tags.length === 0);
-      if (noTagBookmarks.length > 0) {
-        tagMap.set('Uncategorized', noTagBookmarks);
+      // Add bookmarks with no folders to a default folder
+      const noFolderBookmarks = bookmarks.filter(b => !b.folderId);
+      if (noFolderBookmarks.length > 0) {
+        folderMap.set('Uncategorized', noFolderBookmarks);
       }
       
-      // Group bookmarks by their first tag
+      // Group bookmarks by folder
       bookmarks.forEach(bookmark => {
-        if (bookmark.tags && bookmark.tags.length > 0) {
-          const primaryTag = bookmark.tags[0];
-          if (!tagMap.has(primaryTag)) {
-            tagMap.set(primaryTag, []);
+        if (bookmark.folderId) {
+          const folder = folders.find(f => f.id === bookmark.folderId);
+          if (folder) {
+            const folderName = folder.name;
+            if (!folderMap.has(folderName)) {
+              folderMap.set(folderName, []);
+            }
+            folderMap.get(folderName)?.push(bookmark);
+          } else {
+            // If folder doesn't exist anymore, put in uncategorized
+            if (!folderMap.has('Uncategorized')) {
+              folderMap.set('Uncategorized', []);
+            }
+            folderMap.get('Uncategorized')?.push(bookmark);
           }
-          tagMap.get(primaryTag)?.push(bookmark);
         }
       });
       
       // Create folder structure and add bookmarks
-      tagMap.forEach((tagBookmarks, tag) => {
+      folderMap.forEach((folderBookmarks, folderName) => {
         const timestamp = Math.floor(Date.now() / 1000);
-        htmlContent += `    <DT><H3 ADD_DATE="${timestamp}" LAST_MODIFIED="${timestamp}">${tag}</H3>
+        htmlContent += `    <DT><H3 ADD_DATE="${timestamp}" LAST_MODIFIED="${timestamp}">${folderName}</H3>
     <DL><p>
 `;
         
-        tagBookmarks.forEach(bookmark => {
+        folderBookmarks.forEach(bookmark => {
           const addDate = bookmark.dateAdded 
-            ? Math.floor(new Date(bookmark.dateAdded).getTime() / 1000)
+            ? Math.floor(new Date(bookmark.dateAdded as any).getTime() / 1000)
             : Math.floor(Date.now() / 1000);
             
           htmlContent += `        <DT><A HREF="${bookmark.url}" ADD_DATE="${addDate}">${bookmark.title}</A>
@@ -378,6 +531,19 @@ const SettingsDropdown = ({
         variant: "destructive",
       });
     }
+  };
+
+  // Handle deleting all bookmarks
+  const handleDeleteAllBookmarks = () => {
+    localStorage.setItem("bookmarks", "[]");
+    toast({
+      title: "All bookmarks deleted",
+      description: "All your bookmarks have been deleted",
+    });
+    setDeleteAllDialogOpen(false);
+    
+    // Refresh the page
+    window.location.reload();
   };
 
   return (
@@ -434,6 +600,16 @@ const SettingsDropdown = ({
           <DropdownMenuItem onClick={() => setBookmarkletDialogOpen(true)}>
             <FileText className="mr-2 h-4 w-4" />
             Install Bookmarklet
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+          
+          <DropdownMenuItem 
+            onClick={() => setDeleteAllDialogOpen(true)}
+            className="text-red-500 focus:text-red-500 dark:text-red-400 dark:focus:text-red-400"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete All Bookmarks
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -606,6 +782,27 @@ const SettingsDropdown = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete All Bookmarks Confirmation Dialog */}
+      <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Bookmarks</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all your bookmarks. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAllBookmarks}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

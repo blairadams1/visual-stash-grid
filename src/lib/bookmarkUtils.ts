@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 
 export interface Bookmark {
@@ -11,7 +10,9 @@ export interface Bookmark {
   notes?: string;
   collectionId?: string;
   createdAt?: Date;
-  folderId?: string; // New property to indicate if bookmark is in a folder
+  folderId?: string; // Property to indicate if bookmark is in a folder
+  folderName?: string; // Optional folder name for import/export
+  dateAdded?: string;
 }
 
 export interface Folder {
@@ -277,4 +278,22 @@ export const generateAutoTags = (url: string, title: string, limit: number = 3):
   }
   
   return { tags };
+};
+
+// New function to capture screenshot using a service
+export const captureScreenshot = async (url: string): Promise<string> => {
+  try {
+    // Try to get a screenshot via API
+    const response = await fetch(`https://api.apiflash.com/v1/urltoimage?access_key=6ece774766ff420e8c453f54f264bbaf&url=${encodeURIComponent(url)}&width=800&height=600&ttl=2592000`);
+    
+    if (response.ok) {
+      const blob = await response.blob();
+      return URL.createObjectURL(blob);
+    }
+  } catch (error) {
+    console.error(`Error capturing screenshot for ${url}:`, error);
+  }
+  
+  // Fallback to favicon if screenshot fails
+  return `https://www.google.com/s2/favicons?domain=${url}&sz=128`;
 };
