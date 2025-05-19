@@ -15,29 +15,38 @@ const BookmarkletInstall = () => {
   const [showDialog, setShowDialog] = useState(false);
   const { toast } = useToast();
   
-  // Fixed bookmarklet code with proper window opening and styling
+  // Fix the bookmarklet code for better compatibility and reliability
   const bookmarkletCode = `javascript:(function(){
-    // Get meta description for better page context
-    const metaDesc = document.querySelector('meta[name="description"]')?.content || '';
-    
-    // Get h1 text which often contains the main page title
-    const h1Text = document.querySelector('h1')?.textContent || '';
-    
-    // Get main content text for context
-    const mainText = document.querySelector('main')?.textContent?.substring(0, 500) || 
-                    document.body.textContent?.substring(0, 500) || '';
-                    
-    // Open popup with current URL and fixed width/height
-    const popup = window.open('${window.location.origin}/extension?url='+
-      encodeURIComponent(window.location.href)+
-      '&title='+encodeURIComponent(document.title)+
-      '&h1='+encodeURIComponent(h1Text)+
-      '&desc='+encodeURIComponent(metaDesc)+
-      '&content='+encodeURIComponent(mainText),
-      'TagMarked','width=500,height=600,resizable=yes,scrollbars=yes,status=yes');
-    
-    // Alert if popup is blocked
-    if(!popup) alert('Please allow popups for TagMarked to work properly.');
+    try {
+      // Get meta description for better page context
+      var metaDesc = document.querySelector('meta[name="description"]')?.content || '';
+      
+      // Get h1 text which often contains the main page title
+      var h1Text = document.querySelector('h1')?.textContent || '';
+      
+      // Get main content text for context
+      var mainText = document.querySelector('main')?.textContent?.substring(0, 500) || 
+                      document.body.textContent?.substring(0, 500) || '';
+                      
+      // Create the URL with proper encoding of parameters
+      var bookmarkUrl = '${window.location.origin}/extension'+
+        '?url='+encodeURIComponent(window.location.href)+
+        '&title='+encodeURIComponent(document.title)+
+        '&h1='+encodeURIComponent(h1Text)+
+        '&desc='+encodeURIComponent(metaDesc)+
+        '&content='+encodeURIComponent(mainText);
+        
+      // Open popup with current URL and fixed width/height
+      var popup = window.open(bookmarkUrl, 'TagMarked', 'width=500,height=600,resizable=yes,scrollbars=yes');
+      
+      // Alert if popup is blocked
+      if(!popup || popup.closed || typeof popup.closed === 'undefined') {
+        alert('Please allow popups for TagMarked to work properly.');
+      }
+    } catch(e) {
+      alert('TagMarked bookmarklet error: ' + e.message);
+      console.error('TagMarked error:', e);
+    }
   })();`;
 
   const handleCopyCode = () => {
@@ -102,6 +111,22 @@ const BookmarkletInstall = () => {
                 Copy
               </Button>
             </div>
+            
+            <h3 className="font-medium mt-4 mb-2">How to use</h3>
+            <ol className="list-decimal pl-5 text-sm text-gray-700 space-y-2">
+              <li>
+                Add the bookmarklet to your bookmarks bar using one of the options above
+              </li>
+              <li>
+                When browsing a page you want to bookmark, click the TagMarked bookmarklet
+              </li>
+              <li>
+                A popup window will open where you can add tags and save the bookmark
+              </li>
+              <li>
+                If nothing happens when you click the bookmarklet, check if popups are blocked in your browser
+              </li>
+            </ol>
           </div>
           
           <DialogFooter className="sm:justify-start">
