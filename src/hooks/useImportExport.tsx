@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Bookmark, Folder } from '@/lib/types';
@@ -20,38 +19,14 @@ export const useImportExport = (
   const refreshBookmarks = useCallback(() => {
     console.log('Refreshing bookmarks and folders from local storage');
     
-    // For bookmarks
-    const storedBookmarks = localStorage.getItem("bookmarks");
-    if (storedBookmarks) {
-      try {
-        // Parse to validate, then re-save with timestamp to force refresh
-        const parsedBookmarks = JSON.parse(storedBookmarks);
-        localStorage.setItem("bookmarks", JSON.stringify(parsedBookmarks));
-        
-        // Also trigger a manual event for components to react to
-        window.dispatchEvent(new CustomEvent('bookmarkChange', { 
-          detail: { timestamp: Date.now() } 
-        }));
-        
-        console.log(`Refreshed ${parsedBookmarks.length} bookmarks`);
-      } catch (e) {
-        console.error('Error parsing stored bookmarks', e);
-      }
-    }
+    // Trigger manual events for components to react to
+    window.dispatchEvent(new CustomEvent('bookmarkChange', { 
+      detail: { timestamp: Date.now() } 
+    }));
     
-    // For folders
-    const storedFolders = localStorage.getItem("folders");
-    if (storedFolders) {
-      try {
-        // Parse to validate, then re-save with timestamp to force refresh
-        const parsedFolders = JSON.parse(storedFolders);
-        localStorage.setItem("folders", JSON.stringify(parsedFolders));
-        
-        console.log(`Refreshed ${parsedFolders.length} folders`);
-      } catch (e) {
-        console.error('Error parsing stored folders', e);
-      }
-    }
+    window.dispatchEvent(new CustomEvent('folderChange', { 
+      detail: { timestamp: Date.now() } 
+    }));
     
     toast({
       title: "Content refreshed",
@@ -69,8 +44,9 @@ export const useImportExport = (
     // Process the folders first to maintain hierarchy
     const { folderIdMap, importedFolderCount } = processFolders(importedFolders, addFolder);
     
-    // Log any circular dependencies that were found
+    // Check for circular dependencies
     if (importedFolderCount < importedFolders.length) {
+      console.warn(`Some folders were not imported due to circular dependencies. Imported: ${importedFolderCount}/${importedFolders.length}`);
       toast({
         title: "Folder Structure Warning",
         description: "Some folders had circular references and were imported without parent relationships.",
