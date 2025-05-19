@@ -65,6 +65,16 @@ const Index = () => {
       folderId
     });
   };
+  
+  // Create a wrapper function for handleAddFolder to match the expected signature
+  const addFolderWrapper = (name: string, image?: string, tags?: string[], parentId?: string) => {
+    return handleAddFolder({
+      name,
+      image,
+      tags,
+      parentId
+    });
+  };
 
   // Get the import stats and dialog functionality
   const { 
@@ -73,7 +83,7 @@ const Index = () => {
     setShowResultsDialog 
   } = useImportExport(
     addBookmarkWrapper,
-    handleAddFolder,
+    addFolderWrapper,
     setSelectedTags,
     setCurrentFolderId,
     setJustImported
