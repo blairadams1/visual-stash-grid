@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { FolderPlus, Plus } from "lucide-react";
@@ -17,7 +16,6 @@ interface BookmarkContentProps {
   searchQuery: string;
   cardSize: 'small' | 'medium' | 'large';
   theme: 'light' | 'dark';
-  justImported?: boolean;
   handleAddBookmark: (bookmark: Bookmark) => void;
   setShowForm: (show: boolean) => void;
   setShowFolderForm: (show: boolean) => void;
@@ -44,7 +42,6 @@ const BookmarkContent: React.FC<BookmarkContentProps> = ({
   searchQuery,
   cardSize,
   theme,
-  justImported = false,
   handleAddBookmark,
   setShowForm,
   setShowFolderForm,
@@ -113,7 +110,6 @@ const BookmarkContent: React.FC<BookmarkContentProps> = ({
             selectedCollectionId={selectedCollectionId}
             selectedTags={selectedTags}
             searchQuery={searchQuery}
-            justImported={justImported}
           />
         ) : (
           <EmptyState 

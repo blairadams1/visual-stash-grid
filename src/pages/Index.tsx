@@ -3,8 +3,6 @@ import { usePageFunctionality } from "@/hooks/usePageFunctionality";
 import MainLayout from "@/components/layout/MainLayout";
 import AppHeader from "@/components/header/AppHeader";
 import BookmarkContent from "@/components/content/BookmarkContent";
-import { useImportExport } from "@/hooks/useImportExport";
-import ImportResultsDialog from "@/components/settings/ImportResultsDialog";
 
 const Index = () => {
   // Use our custom hook to access all functionality
@@ -14,7 +12,7 @@ const Index = () => {
     searchQuery,
     setSearchQuery,
     selectedTags,
-    setSelectedTags,  // Ensure this is properly destructured
+    setSelectedTags,
     showForm,
     setShowForm,
     showFolderForm,
@@ -32,12 +30,9 @@ const Index = () => {
     setTheme,
     cardSize,
     setCardSize,
-    justImported,
-    setJustImported,  // Ensure this is properly destructured
     refreshBookmarks,
     handleAddBookmark,
     handleAddFolder,
-    handleImportBookmarks,
     handleTagSelect,
     handleTagDeselect,
     handleClearAllTags,
@@ -51,48 +46,6 @@ const Index = () => {
     updateFolder,
     reorderBookmarks
   } = usePageFunctionality();
-
-  // Create wrapper functions that match the expected function signatures
-  const addBookmarkWrapper = (title: string, url: string, thumbnail?: string, tags?: string[], folderId?: string) => {
-    return handleAddBookmark({
-      id: '',
-      title,
-      url,
-      thumbnail: thumbnail || '',
-      tags: tags || [],
-      order: 0,
-      dateAdded: new Date().toISOString(),
-      folderId
-    });
-  };
-  
-  // Create a wrapper function for handleAddFolder to match the expected signature
-  const addFolderWrapper = (name: string, image?: string, tags?: string[], parentId?: string) => {
-    return handleAddFolder({
-      name,
-      image,
-      tags,
-      parentId
-    });
-  };
-
-  // Get the import stats and dialog functionality
-  const { 
-    importStats, 
-    showResultsDialog, 
-    setShowResultsDialog 
-  } = useImportExport(
-    addBookmarkWrapper,
-    addFolderWrapper,
-    setSelectedTags,
-    setCurrentFolderId,
-    setJustImported
-  );
-
-  // Function to navigate to a folder
-  const handleNavigateToFolder = (folderId: string | null) => {
-    setCurrentFolderId(folderId);
-  };
 
   return (
     <MainLayout
@@ -119,7 +72,6 @@ const Index = () => {
         onChangeCardSize={setCardSize}
         currentCardSize={cardSize}
         onToggleSidebar={toggleSidebar}
-        handleImportBookmarks={handleImportBookmarks}
         handleTagSelect={handleTagSelect}
         handleTagDeselect={handleTagDeselect}
         handleClearAllTags={handleClearAllTags}
@@ -140,7 +92,6 @@ const Index = () => {
         searchQuery={searchQuery}
         cardSize={cardSize}
         theme={theme}
-        justImported={justImported}
         handleAddBookmark={handleAddBookmark}
         setShowForm={setShowForm}
         setShowFolderForm={setShowFolderForm}
@@ -155,16 +106,6 @@ const Index = () => {
         refreshBookmarks={refreshBookmarks}
         getCurrentPageInfo={getCurrentPageInfo}
       />
-      
-      {/* Import results dialog */}
-      {importStats && (
-        <ImportResultsDialog
-          open={showResultsDialog}
-          onOpenChange={setShowResultsDialog}
-          stats={importStats}
-          onNavigateToFolder={handleNavigateToFolder}
-        />
-      )}
     </MainLayout>
   );
 };

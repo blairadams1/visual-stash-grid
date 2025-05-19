@@ -6,7 +6,7 @@ import { usePageState } from '@/hooks/usePageState';
 import { useTagHandlers } from '@/hooks/useTagHandlers';
 import { useFolderHandlers } from '@/hooks/useFolderHandlers';
 import { useBookmarkHandlers } from '@/hooks/useBookmarkHandlers';
-import { useImportExport } from '@/hooks/useImportExport';
+import { useToast } from '@/hooks/use-toast';
 
 /**
  * Main hook that combines all page functionality
@@ -29,6 +29,8 @@ export const usePageFunctionality = () => {
     reorderFolders 
   } = useFolders();
   
+  const { toast } = useToast();
+  
   // Get state management
   const pageState = usePageState();
   const {
@@ -38,8 +40,6 @@ export const usePageFunctionality = () => {
     setCurrentFolderId,
     currentFolder,
     setCurrentFolder,
-    justImported,
-    setJustImported,
     isFilterOpen,
     setIsFilterOpen,
     showSidebar,
@@ -67,15 +67,6 @@ export const usePageFunctionality = () => {
     currentFolderId
   );
   
-  // Get import/export handlers
-  const importExportHandlers = useImportExport(
-    addBookmark,
-    addFolder,
-    setSelectedTags,
-    setCurrentFolderId,
-    setJustImported
-  );
-  
   // Update current folder when ID changes
   useEffect(() => {
     if (currentFolderId) {
@@ -86,23 +77,6 @@ export const usePageFunctionality = () => {
     }
   }, [currentFolderId, folders, setCurrentFolder]);
 
-  // Listen for force refresh events
-  useEffect(() => {
-    const handleForceRefresh = (e: Event) => {
-      console.log('Received force bookmark refresh event', e);
-      importExportHandlers.refreshBookmarks();
-      
-      // Set a flag that we just imported - this will reset after 5 seconds
-      setJustImported(true);
-      setTimeout(() => setJustImported(false), 5000);
-    };
-    
-    window.addEventListener('forceBookmarkRefresh', handleForceRefresh);
-    return () => {
-      window.removeEventListener('forceBookmarkRefresh', handleForceRefresh);
-    };
-  }, [importExportHandlers, setJustImported]);
-
   // Apply theme when it changes
   useEffect(() => {
     if (pageState.theme === 'dark') {
@@ -111,6 +85,21 @@ export const usePageFunctionality = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [pageState.theme]);
+
+  // Simple refresh bookmarks function
+  const refreshBookmarks = () => {
+    window.dispatchEvent(new CustomEvent('bookmarkChange', { 
+      detail: { timestamp: Date.now() } 
+    }));
+    
+    window.dispatchEvent(new CustomEvent('folderChange', { 
+      detail: { timestamp: Date.now() } 
+    }));
+    
+    toast({
+      title: "Content refreshed",
+    });
+  };
 
   // Toggle collections sidebar
   const toggleSidebar = () => {
@@ -129,7 +118,6 @@ export const usePageFunctionality = () => {
     ...tagHandlers,
     ...folderHandlers,
     ...bookmarkHandlers,
-    ...importExportHandlers,
     
     // Direct actions from hooks
     deleteBookmark,
@@ -140,5 +128,6 @@ export const usePageFunctionality = () => {
     
     // Additional functions
     toggleSidebar,
+    refreshBookmarks,
   };
 };
