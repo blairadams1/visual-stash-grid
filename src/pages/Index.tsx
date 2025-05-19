@@ -52,13 +52,27 @@ const Index = () => {
     reorderBookmarks
   } = usePageFunctionality();
 
+  // Create wrapper functions that match the expected function signatures
+  const addBookmarkWrapper = (title: string, url: string, thumbnail?: string, tags?: string[], folderId?: string) => {
+    return handleAddBookmark({
+      id: '',
+      title,
+      url,
+      thumbnail: thumbnail || '',
+      tags: tags || [],
+      order: 0,
+      dateAdded: new Date().toISOString(),
+      folderId
+    });
+  };
+
   // Get the import stats and dialog functionality
   const { 
     importStats, 
     showResultsDialog, 
     setShowResultsDialog 
   } = useImportExport(
-    handleAddBookmark,
+    addBookmarkWrapper,
     handleAddFolder,
     setSelectedTags,
     setCurrentFolderId,

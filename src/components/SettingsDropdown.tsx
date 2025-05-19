@@ -45,9 +45,31 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
 }) => {
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
   
-  // Pass dummy functions since we don't need real functionality here
-  const dummyAddBookmark = () => ({ id: '', title: '', url: '', createdAt: new Date() });
-  const dummyAddFolder = () => ({ id: '', name: '', createdAt: new Date() });
+  // Pass dummy functions with the correct type signatures
+  const dummyAddBookmark = (title: string, url: string, thumbnail?: string, tags: string[] = [], folderId?: string): Bookmark => {
+    return {
+      id: '',
+      title,
+      url,
+      thumbnail: thumbnail || '',
+      tags: tags || [],
+      order: 0,
+      dateAdded: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    };
+  };
+  
+  const dummyAddFolder = (name: string, image?: string, tags?: string[], parentId?: string): Folder => {
+    return {
+      id: '',
+      name,
+      image: image || '',
+      tags: tags || [],
+      order: 0,
+      dateAdded: new Date().toISOString()
+    };
+  };
+  
   const dummySetSelectedTags = () => {};
   const dummySetCurrentFolderId = () => {};
   const dummySetJustImported = () => {};
