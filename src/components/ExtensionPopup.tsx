@@ -149,7 +149,9 @@ const ExtensionPopup = () => {
 
   return (
     <div className="p-4 max-w-md mx-auto bg-white rounded-lg shadow-lg">
-      <ExtensionHeader />
+      <div className="bg-bookmark-blue text-white p-4 -mx-4 -mt-4 mb-4 rounded-t-lg">
+        <ExtensionHeader />
+      </div>
       
       <BookmarkForm 
         url={url}

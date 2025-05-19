@@ -15,7 +15,7 @@ const BookmarkletInstall = () => {
   const [showDialog, setShowDialog] = useState(false);
   const { toast } = useToast();
   
-  // Create bookmarklet code with improved behavior - pass more data to better identify page
+  // Fixed bookmarklet code with proper window opening and styling
   const bookmarkletCode = `javascript:(function(){
     // Get meta description for better page context
     const metaDesc = document.querySelector('meta[name="description"]')?.content || '';
@@ -27,13 +27,16 @@ const BookmarkletInstall = () => {
     const mainText = document.querySelector('main')?.textContent?.substring(0, 500) || 
                     document.body.textContent?.substring(0, 500) || '';
                     
+    // Open popup with current URL and fixed width/height
     const popup = window.open('${window.location.origin}/extension?url='+
       encodeURIComponent(window.location.href)+
       '&title='+encodeURIComponent(document.title)+
       '&h1='+encodeURIComponent(h1Text)+
       '&desc='+encodeURIComponent(metaDesc)+
       '&content='+encodeURIComponent(mainText),
-      'TagMarked','width=400,height=500,resizable=yes');
+      'TagMarked','width=500,height=600,resizable=yes,scrollbars=yes,status=yes');
+    
+    // Alert if popup is blocked
     if(!popup) alert('Please allow popups for TagMarked to work properly.');
   })();`;
 
@@ -57,8 +60,10 @@ const BookmarkletInstall = () => {
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Install TagMarked</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="bg-bookmark-blue text-white p-4 -mt-6 -mx-6 rounded-t-lg">
+              Install TagMarked
+            </DialogTitle>
+            <DialogDescription className="pt-2">
               Add TagMarked to your browser for quick bookmarking
             </DialogDescription>
           </DialogHeader>
