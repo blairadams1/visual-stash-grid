@@ -98,18 +98,18 @@ const getFallbackThumbnail = async (
     const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=256`;
     
     try {
-      // Test if favicon loads
+      // Test if favicon loads and is high quality
       await new Promise<void>((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
-          // Check if the favicon has reasonable dimensions (not 1x1 or very small)
-          if (img.naturalWidth > 16 && img.naturalHeight > 16) {
+          // Only accept favicons that are reasonably sized (not tiny 16x16 or smaller)
+          if (img.naturalWidth >= 32 && img.naturalHeight >= 32) {
             resolve();
           } else {
-            reject();
+            reject(new Error('Favicon too small'));
           }
         };
-        img.onerror = () => reject();
+        img.onerror = () => reject(new Error('Favicon load failed'));
         img.src = faviconUrl;
       });
 
@@ -122,8 +122,9 @@ const getFallbackThumbnail = async (
         type: 'favicon',
         source: 'fallback'
       };
-    } catch {
-      // Favicon failed, use our improved placeholder
+    } catch (error) {
+      console.log(`Favicon failed for ${domain}:`, error);
+      // Favicon failed or too small, use our improved placeholder
     }
   }
 
