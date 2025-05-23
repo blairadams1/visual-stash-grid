@@ -1,5 +1,5 @@
-
 import { v4 as uuidv4 } from 'uuid';
+import { getIntelligentThumbnail, getThumbnailSettings } from './intelligentThumbnail';
 
 export interface Bookmark {
   id: string;
@@ -68,29 +68,42 @@ export const generatePlaceholderThumbnail = () => {
   return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='${color.replace('#', '%23')}' /%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='42' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='middle'%3E🔖%3C/text%3E%3C/svg%3E`;
 };
 
-export const createBookmark = (
+export const createBookmark = async (
   url: string,
   title: string,
   tags: string[],
   existingBookmarks: Bookmark[] = [],
   collectionId?: string,
-  thumbnail?: string,
+  customThumbnail?: string,
   notes?: string,
   folderId?: string
-): Bookmark => {
+): Promise<Bookmark> => {
   // Find the highest order from existing bookmarks
   const highestOrder = existingBookmarks.length > 0
     ? Math.max(...existingBookmarks.map(b => b.order))
     : 0;
 
-  // Create default thumbnail if none provided
-  const defaultThumbnail = thumbnail || `https://www.google.com/s2/favicons?domain=${url}&sz=128`;
+  let thumbnail = customThumbnail;
+  
+  // Generate intelligent thumbnail if no custom thumbnail provided
+  if (!customThumbnail) {
+    try {
+      const settings = getThumbnailSettings();
+      const result = await getIntelligentThumbnail(url, title, settings);
+      thumbnail = result.thumbnail;
+      console.log(`Generated ${result.type} thumbnail for ${url} (${result.source})`);
+    } catch (error) {
+      console.error('Failed to generate intelligent thumbnail:', error);
+      // Fallback to simple favicon
+      thumbnail = `https://www.google.com/s2/favicons?domain=${url}&sz=128`;
+    }
+  }
   
   return {
     id: uuidv4(),
     title,
     url,
-    thumbnail: defaultThumbnail,
+    thumbnail: thumbnail || generatePlaceholderThumbnail(),
     tags,
     order: highestOrder + 1,
     notes,
