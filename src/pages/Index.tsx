@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -10,7 +9,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
-import { Filter, Plus, RefreshCw, FolderPlus, MoveLeft, LayoutGrid, List } from 'lucide-react';
+import { Filter, Plus, RefreshCw, FolderPlus, MoveLeft } from 'lucide-react';
 import { 
   Popover,
   PopoverContent,
@@ -25,7 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import FolderForm from "@/components/FolderForm";
 import SettingsDropdown from "@/components/SettingsDropdown";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const Index = () => {
   // State for bookmarks and folders from local storage
@@ -44,7 +42,6 @@ const Index = () => {
   // Presentation settings
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
   const [cardSize, setCardSize] = useLocalStorage<'small' | 'medium' | 'large'>('cardSize', 'medium');
-  const [layout, setLayout] = useLocalStorage<'grid' | 'list' | 'compact'>('layout', 'grid');
   
   const { toast } = useToast();
   
@@ -250,16 +247,6 @@ const Index = () => {
                   Back
                 </Button>
               )}
-
-              {/* Layout Toggle */}
-              <ToggleGroup type="single" value={layout} onValueChange={(value) => value && setLayout(value as 'grid' | 'list' | 'compact')}>
-                <ToggleGroupItem value="grid" aria-label="Grid view">
-                  <LayoutGrid className="h-4 w-4" />
-                </ToggleGroupItem>
-                <ToggleGroupItem value="list" aria-label="List view">
-                  <List className="h-4 w-4" />
-                </ToggleGroupItem>
-              </ToggleGroup>
               
               <Button 
                 onClick={() => setShowForm(!showForm)}
@@ -397,7 +384,6 @@ const Index = () => {
               onOpenFolder={handleOpenFolder}
               onMoveToFolder={handleMoveToFolder}
               cardSize={cardSize}
-              layout={layout}
               currentFolderId={currentFolderId}
             />
           ) : (
