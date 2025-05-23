@@ -1,4 +1,3 @@
-
 // SVG thumbnail template system for generating domain-appropriate thumbnails
 import { DomainInfo } from './domainIntelligence';
 import { CategoryInfo } from './categoryDetection';
@@ -164,8 +163,8 @@ export const generateCategoryThumbnail = (
   return generateIconTemplate(name, color, '#ffffff', icon, options);
 };
 
-// Create a favicon with proper scaling to reduce pixelation
-export const createScaledFavicon = (faviconUrl: string, scale: number = 0.33): string => {
+// Create a favicon with proper scaling to reduce pixelation - reduced to 11% scale
+export const createScaledFavicon = (faviconUrl: string, scale: number = 0.11): string => {
   const size = 120;
   const iconSize = Math.round(size * scale);
   const offset = Math.round((size - iconSize) / 2);
