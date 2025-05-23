@@ -94,14 +94,21 @@ const getFallbackThumbnail = async (
   const domain = extractDomain(url);
 
   if (settings.fallbackToFavicon && domain) {
-    // Try favicon first
-    const faviconUrl = `https://www.google.com/s2/favicons?domain=${url}&sz=128`;
+    // Try higher quality favicon with better fallback
+    const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=256`;
     
     try {
       // Test if favicon loads
       await new Promise<void>((resolve, reject) => {
         const img = new Image();
-        img.onload = () => resolve();
+        img.onload = () => {
+          // Check if the favicon has reasonable dimensions (not 1x1 or very small)
+          if (img.naturalWidth > 16 && img.naturalHeight > 16) {
+            resolve();
+          } else {
+            reject();
+          }
+        };
         img.onerror = () => reject();
         img.src = faviconUrl;
       });
@@ -116,11 +123,11 @@ const getFallbackThumbnail = async (
         source: 'fallback'
       };
     } catch {
-      // Favicon failed, use placeholder
+      // Favicon failed, use our improved placeholder
     }
   }
 
-  // Generate placeholder thumbnail
+  // Generate high-quality SVG placeholder thumbnail
   const thumbnail = generateSVGThumbnail(domain || 'website', title);
   
   if (settings.cacheEnabled) {
