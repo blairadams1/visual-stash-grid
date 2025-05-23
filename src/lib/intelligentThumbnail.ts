@@ -2,7 +2,7 @@
 // Main intelligent thumbnail system that coordinates all components
 import { extractDomain, getDomainInfo } from './domainIntelligence';
 import { detectCategory } from './categoryDetection';
-import { generateSVGThumbnail, generateCategoryThumbnail } from './thumbnailTemplates';
+import { generateSVGThumbnail, generateCategoryThumbnail, createScaledFavicon } from './thumbnailTemplates';
 import { ThumbnailCache } from './thumbnailCache';
 
 export interface ThumbnailResult {
@@ -113,12 +113,15 @@ const getFallbackThumbnail = async (
         img.src = faviconUrl;
       });
 
+      // Create a scaled version of the favicon to reduce pixelation
+      const scaledFavicon = createScaledFavicon(faviconUrl, 0.33);
+
       if (settings.cacheEnabled) {
-        ThumbnailCache.addCachedThumbnail(url, faviconUrl, domain, 'favicon');
+        ThumbnailCache.addCachedThumbnail(url, scaledFavicon, domain, 'favicon');
       }
 
       return {
-        thumbnail: faviconUrl,
+        thumbnail: scaledFavicon,
         type: 'favicon',
         source: 'fallback'
       };
@@ -128,7 +131,7 @@ const getFallbackThumbnail = async (
     }
   }
 
-  // Generate high-quality SVG placeholder thumbnail
+  // Generate high-quality SVG placeholder thumbnail with diverse avatars
   const thumbnail = generateSVGThumbnail(domain || 'website', title);
   
   if (settings.cacheEnabled) {

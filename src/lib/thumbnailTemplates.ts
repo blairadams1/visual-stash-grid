@@ -1,3 +1,4 @@
+
 // SVG thumbnail template system for generating domain-appropriate thumbnails
 import { DomainInfo } from './domainIntelligence';
 import { CategoryInfo } from './categoryDetection';
@@ -7,6 +8,25 @@ export interface ThumbnailOptions {
   height?: number;
   borderRadius?: number;
 }
+
+// Diverse avatar options
+const DIVERSE_AVATARS = [
+  '👨🏻‍💻', // Light skin man
+  '👩🏻‍💻', // Light skin woman
+  '👨🏽‍💻', // Medium skin man
+  '👩🏽‍💻', // Medium skin woman
+  '👨🏿‍💻', // Dark skin man
+  '👩🏿‍💻', // Dark skin woman
+  '👨🏼‍💻', // Medium-light skin man
+  '👩🏼‍💻', // Medium-light skin woman
+  '👨🏾‍💻', // Medium-dark skin man
+  '👩🏾‍💻', // Medium-dark skin woman
+  '🧑🏻‍💻', // Light skin person
+  '🧑🏽‍💻', // Medium skin person
+  '🧑🏿‍💻', // Dark skin person
+  '🧑🏼‍💻', // Medium-light skin person
+  '🧑🏾‍💻', // Medium-dark skin person
+];
 
 export const generateSVGThumbnail = (
   domain: string,
@@ -31,20 +51,20 @@ export const generateSVGThumbnail = (
   let layout: string | undefined;
   let name: string;
   
-  if ('primaryColor' in domainInfo!) {
+  if ('primaryColor' in info) {
     // It's a DomainInfo object
-    primaryColor = domainInfo!.primaryColor;
-    secondaryColor = domainInfo!.secondaryColor || '#ffffff';
-    icon = domainInfo!.icon;
-    layout = domainInfo!.layout;
-    name = domainInfo!.name;
-  } else if ('color' in categoryInfo!) {
+    primaryColor = info.primaryColor;
+    secondaryColor = info.secondaryColor || '#ffffff';
+    icon = info.icon;
+    layout = info.layout;
+    name = info.name;
+  } else if ('color' in info) {
     // It's a CategoryInfo object
-    primaryColor = categoryInfo!.color;
+    primaryColor = info.color;
     secondaryColor = '#ffffff';
-    icon = categoryInfo!.icon;
+    icon = info.icon;
     layout = 'icon'; // Default layout for categories
-    name = categoryInfo!.name;
+    name = info.name;
   } else {
     // Fallback
     return generateDefaultThumbnail(domain, title, options);
@@ -125,8 +145,12 @@ const generateDefaultThumbnail = (
   const colors = ['#4285F4', '#34A853', '#FBBC05', '#EA4335', '#8AB4F8', '#673AB7'];
   const color = colors[Math.abs(domain.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % colors.length];
   
-  // Create a more polished globe icon with better styling
-  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'%3E%3Cdefs%3E%3ClinearGradient id='grad${width}' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:${encodeURIComponent(color)};stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23000000;stop-opacity:0.2' /%3E%3C/linearGradient%3E%3ClinearGradient id='iconGrad${width}' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23ffffff;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23f0f0f0;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='${width}' height='${height}' fill='url(%23grad${width})' rx='${borderRadius}' /%3E%3Cg transform='translate(${(width-48)/2}, ${(height-48)/2})'%3E%3Ccircle cx='24' cy='24' r='22' fill='url(%23iconGrad${width})' stroke='rgba(255,255,255,0.3)' stroke-width='1'/%3E%3Cpath d='M24 4C13.5 4 5 12.5 5 23s8.5 19 19 19 19-8.5 19-19S34.5 4 24 4zm-2 33.93c-6.91-1.04-12.25-6.74-12.25-13.93 0-1.09.12-2.14.37-3.14L15 25v2c0 1.93 1.57 3.5 3.5 3.5v2.43zm12.07-4.46c-.46-1.42-1.75-2.47-3.32-2.47h-1.75v-5.25c0-.97-.78-1.75-1.75-1.75H14v-3.5h3.5c.97 0 1.75-.78 1.75-1.75V12.25h3.5c1.93 0 3.5-1.57 3.5-3.5v-.72c5.12 2.08 8.75 7.11 8.75 12.97 0 3.64-1.4 6.95-3.68 9.43z' fill='${encodeURIComponent(color)}'/%3E%3C/g%3E%3C/svg%3E`;
+  // Select a diverse avatar based on domain hash
+  const avatarIndex = Math.abs(domain.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % DIVERSE_AVATARS.length;
+  const avatar = DIVERSE_AVATARS[avatarIndex];
+  
+  // Create a modern, diverse avatar thumbnail
+  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'%3E%3Cdefs%3E%3ClinearGradient id='grad${width}' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:${encodeURIComponent(color)};stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23000000;stop-opacity:0.15' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='${width}' height='${height}' fill='url(%23grad${width})' rx='${borderRadius}' /%3E%3Ctext x='50%25' y='50%25' font-family='Apple Color Emoji, Segoe UI Emoji, sans-serif' font-size='42' text-anchor='middle' dominant-baseline='middle'%3E${encodeURIComponent(avatar)}%3C/text%3E%3C/svg%3E`;
 };
 
 export const generateCategoryThumbnail = (
@@ -137,4 +161,13 @@ export const generateCategoryThumbnail = (
   const { color, icon, name } = categoryInfo;
   
   return generateIconTemplate(name, color, '#ffffff', icon, options);
+};
+
+// Create a favicon with proper scaling to reduce pixelation
+export const createScaledFavicon = (faviconUrl: string, scale: number = 0.33): string => {
+  const size = 120;
+  const iconSize = Math.round(size * scale);
+  const offset = Math.round((size - iconSize) / 2);
+  
+  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}' viewBox='0 0 ${size} ${size}'%3E%3Crect width='${size}' height='${size}' fill='%23f8f9fa' rx='8' /%3E%3Cimage x='${offset}' y='${offset}' width='${iconSize}' height='${iconSize}' href='${encodeURIComponent(faviconUrl)}' style='image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;' /%3E%3C/svg%3E`;
 };
