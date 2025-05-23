@@ -163,10 +163,11 @@ export const generateCategoryThumbnail = (
   return generateIconTemplate(name, color, '#ffffff', icon, options);
 };
 
-// Create a favicon with proper scaling to reduce pixelation - reduced to 11% scale
+// Create a favicon with proper scaling and 70px padding on all sides
 export const createScaledFavicon = (faviconUrl: string, scale: number = 0.11): string => {
   const size = 120;
-  const iconSize = Math.round(size * scale);
+  const padding = 70;
+  const iconSize = Math.round((size - padding * 2) * scale);
   const offset = Math.round((size - iconSize) / 2);
   
   return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}' viewBox='0 0 ${size} ${size}'%3E%3Crect width='${size}' height='${size}' fill='%23f8f9fa' rx='8' /%3E%3Cimage x='${offset}' y='${offset}' width='${iconSize}' height='${iconSize}' href='${encodeURIComponent(faviconUrl)}' style='image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;' /%3E%3C/svg%3E`;
