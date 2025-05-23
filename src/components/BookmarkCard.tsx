@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -131,8 +132,8 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
       });
     };
 
-    // Object-fit property based on card size
-    const objectFitStyle = cardSize === 'small' ? 'object-top' : 'object-cover';
+    // Check if the thumbnail is a solid color (placeholder)
+    const isSolidColor = intelligentThumbnail.startsWith('data:image/svg+xml');
 
     if (layout === 'list') {
       return (
@@ -142,14 +143,36 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
             className="group relative overflow-hidden rounded-lg shadow-md cursor-grab active:cursor-grabbing"
           >
             <div className="flex flex-col">
-              {/* Image Section */}
-              <div className="relative h-40 overflow-hidden">
-                <img
-                  src={imageError ? generatePlaceholderThumbnail() : intelligentThumbnail}
-                  alt={bookmark.title}
-                  onError={handleImageError}
-                  className={`w-full h-full ${objectFitStyle}`}
-                />
+              {/* Image Section with proper aspect ratio */}
+              <div className="relative w-full">
+                <AspectRatio ratio={16/10}>
+                  {isSolidColor ? (
+                    // For solid color backgrounds, extend across full width
+                    <div 
+                      className="w-full h-full flex items-center justify-center"
+                      style={{ 
+                        background: intelligentThumbnail.includes('data:image/svg+xml') 
+                          ? `url("${intelligentThumbnail}")` 
+                          : intelligentThumbnail 
+                      }}
+                    >
+                      <a
+                        href={bookmark.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute inset-0"
+                      />
+                    </div>
+                  ) : (
+                    // For actual images, maintain aspect ratio and center
+                    <img
+                      src={imageError ? generatePlaceholderThumbnail() : intelligentThumbnail}
+                      alt={bookmark.title}
+                      onError={handleImageError}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </AspectRatio>
                 
                 <a
                   href={bookmark.url}
@@ -184,18 +207,18 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
               </div>
 
               {/* Content Section */}
-              <div className="p-3">
-                <h3 className="text-sm font-medium line-clamp-2 mb-2 text-gray-900 dark:text-gray-100">
+              <div className="p-4">
+                <h3 className="text-sm font-medium line-clamp-2 mb-3 text-gray-900 dark:text-gray-100">
                   {bookmark.title}
                 </h3>
                 
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {bookmark.tags.slice(0, 3).map((tag) => (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {bookmark.tags.slice(0, 4).map((tag) => (
                     <Button
                       key={tag}
                       variant="outline"
                       size="sm"
-                      className="h-5 px-2 text-xs bg-gray-100 hover:bg-bookmark-blue text-gray-700 hover:text-white border-gray-200 hover:border-transparent"
+                      className="h-6 px-2 text-xs bg-gray-100 hover:bg-bookmark-blue text-gray-700 hover:text-white border-gray-200 hover:border-transparent"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -205,9 +228,9 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
                       {tag}
                     </Button>
                   ))}
-                  {bookmark.tags.length > 3 && (
+                  {bookmark.tags.length > 4 && (
                     <span className="text-xs text-gray-500 flex items-center">
-                      +{bookmark.tags.length - 3}
+                      +{bookmark.tags.length - 4}
                     </span>
                   )}
                 </div>
@@ -373,7 +396,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
               src={imageError ? generatePlaceholderThumbnail() : intelligentThumbnail}
               alt={bookmark.title}
               onError={handleImageError}
-              className={`w-full h-full ${objectFitStyle}`}
+              className="w-full h-full object-cover"
             />
             
             {/* Gradient overlay */}
