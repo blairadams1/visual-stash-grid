@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -315,6 +314,7 @@ const Index = () => {
               
               <SettingsDropdown 
                 bookmarks={bookmarks} 
+                folders={folders}
                 onChangeTheme={setTheme}
                 onChangeCardSize={setCardSize}
                 currentTheme={theme}

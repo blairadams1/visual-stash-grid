@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Palette, FileText, Moon, Sun } from 'lucide-react';
+import { Settings, Palette, FileText, Moon, Sun, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
   DropdownMenu,
@@ -23,12 +23,23 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import BookmarkletInstall from './BookmarkletInstall';
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SettingsDropdownProps {
   bookmarks: any[];
+  folders: any[];
   onChangeTheme: (theme: 'light' | 'dark') => void;
   onChangeCardSize: (size: 'small' | 'medium' | 'large') => void;
   currentTheme: 'light' | 'dark';
@@ -37,6 +48,7 @@ interface SettingsDropdownProps {
 
 const SettingsDropdown = ({ 
   bookmarks, 
+  folders,
   onChangeTheme, 
   onChangeCardSize,
   currentTheme,
@@ -44,6 +56,7 @@ const SettingsDropdown = ({
 }: SettingsDropdownProps) => {
   const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
   const [bookmarkletDialogOpen, setBookmarkletDialogOpen] = useState(false);
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importHtmlFile, setImportHtmlFile] = useState<File | null>(null);
   const { toast } = useToast();
@@ -380,6 +393,32 @@ const SettingsDropdown = ({
     }
   };
 
+  // Handle deleting all bookmarks
+  const handleDeleteAllBookmarks = () => {
+    try {
+      // Remove all bookmarks and folders from localStorage
+      localStorage.setItem("bookmarks", JSON.stringify([]));
+      localStorage.setItem("folders", JSON.stringify([]));
+      
+      setDeleteAllDialogOpen(false);
+      
+      toast({
+        title: "All bookmarks deleted",
+        description: "All your bookmarks and folders have been deleted",
+      });
+      
+      // Refresh the page to show the empty state
+      window.location.reload();
+    } catch (error) {
+      console.error("Delete all error:", error);
+      toast({
+        title: "Delete failed",
+        description: "There was an error deleting your bookmarks",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -434,6 +473,13 @@ const SettingsDropdown = ({
           <DropdownMenuItem onClick={() => setBookmarkletDialogOpen(true)}>
             <FileText className="mr-2 h-4 w-4" />
             Install Bookmarklet
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+          
+          <DropdownMenuItem onClick={() => setDeleteAllDialogOpen(true)} className="text-red-500 focus:text-red-500">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete All Bookmarks
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -606,6 +652,73 @@ const SettingsDropdown = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete All Bookmarks Confirmation Dialog */}
+      <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Bookmarks</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure? This action cannot be undone. This will permanently delete all your bookmarks and folders.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto"
+              onClick={() => {
+                // Export bookmarks before deleting
+                try {
+                  // Create a JSON string of the bookmarks and folders data
+                  const exportData = {
+                    bookmarks,
+                    folders
+                  };
+                  const bookmarksData = JSON.stringify(exportData, null, 2);
+                  
+                  // Create a blob with the data
+                  const blob = new Blob([bookmarksData], { type: 'application/json' });
+                  
+                  // Create an object URL for the blob
+                  const url = URL.createObjectURL(blob);
+                  
+                  // Create a temporary anchor element and trigger download
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `tagmarked-backup-${new Date().toISOString().split('T')[0]}.json`;
+                  document.body.appendChild(a);
+                  a.click();
+                  
+                  // Clean up
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  
+                  toast({
+                    title: "Backup created",
+                    description: "Your bookmarks have been backed up successfully",
+                  });
+                } catch (error) {
+                  console.error("Backup error:", error);
+                  toast({
+                    title: "Backup failed",
+                    description: "There was an error backing up your bookmarks",
+                    variant: "destructive",
+                  });
+                }
+              }}
+            >
+              Download Backup
+            </Button>
+            <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700" 
+              onClick={handleDeleteAllBookmarks}
+            >
+              Yes, Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
