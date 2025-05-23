@@ -25,18 +25,43 @@ export const generateSVGThumbnail = (
     return generateDefaultThumbnail(domain, title, options);
   }
   
-  const { primaryColor, secondaryColor, icon, layout, name } = info;
-  const displayName = domainInfo?.name || name;
+  // Extract properties based on the type of info object
+  let primaryColor: string;
+  let secondaryColor: string;
+  let icon: string;
+  let layout: string | undefined;
+  let name: string;
+  
+  if ('primaryColor' in domainInfo!) {
+    // It's a DomainInfo object
+    primaryColor = domainInfo!.primaryColor;
+    secondaryColor = domainInfo!.secondaryColor || '#ffffff';
+    icon = domainInfo!.icon;
+    layout = domainInfo!.layout;
+    name = domainInfo!.name;
+  } else if ('color' in categoryInfo!) {
+    // It's a CategoryInfo object
+    primaryColor = categoryInfo!.color;
+    secondaryColor = '#ffffff';
+    icon = categoryInfo!.icon;
+    layout = 'icon'; // Default layout for categories
+    name = categoryInfo!.name;
+  } else {
+    // Fallback
+    return generateDefaultThumbnail(domain, title, options);
+  }
+  
+  const displayName = domainInfo ? domainInfo.name : name;
   
   switch (layout) {
     case 'logo':
-      return generateLogoTemplate(displayName, primaryColor, secondaryColor || '#ffffff', icon, options);
+      return generateLogoTemplate(displayName, primaryColor, secondaryColor, icon, options);
     case 'text':
-      return generateTextTemplate(displayName, primaryColor, secondaryColor || '#ffffff', icon, options);
+      return generateTextTemplate(displayName, primaryColor, secondaryColor, icon, options);
     case 'icon':
-      return generateIconTemplate(displayName, primaryColor, secondaryColor || '#ffffff', icon, options);
+      return generateIconTemplate(displayName, primaryColor, secondaryColor, icon, options);
     case 'combined':
-      return generateCombinedTemplate(displayName, primaryColor, secondaryColor || '#ffffff', icon, options);
+      return generateCombinedTemplate(displayName, primaryColor, secondaryColor, icon, options);
     default:
       return generateDefaultThumbnail(domain, title, options);
   }
@@ -111,7 +136,6 @@ export const generateCategoryThumbnail = (
   domain: string,
   options: ThumbnailOptions = {}
 ): string => {
-  const { width = 120, height = 120, borderRadius = 8 } = options;
   const { color, icon, name } = categoryInfo;
   
   return generateIconTemplate(name, color, '#ffffff', icon, options);

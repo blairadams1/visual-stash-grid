@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,7 +83,7 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({
         .filter((tag) => tag.length > 0);
 
       // Create bookmark
-      const newBookmark = createBookmark(
+      const newBookmark = await createBookmark(
         processedUrl,
         finalTitle,
         tagArray,
