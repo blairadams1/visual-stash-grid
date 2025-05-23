@@ -1,4 +1,3 @@
-
 import { Bookmark, Collection, Folder } from "@/lib/bookmarkUtils";
 import BookmarkCard from "./BookmarkCard";
 import FolderCard from "./FolderCard";
@@ -272,9 +271,9 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
     ...filteredBookmarks.map(bookmark => ({ item: bookmark, type: 'bookmark' as const }))
   ].sort((a, b) => a.item.order - b.item.order);
   
-  // Determine column count based on card size
+  // Determine column count based on card size and layout
   const getColumnClasses = () => {
-    if (layout === 'list') return 'grid-cols-1';
+    if (layout === 'list') return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
     
     switch (cardSize) {
       case 'small':
@@ -287,7 +286,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
   };
 
   return (
-    <div className={`grid gap-4 px-0 mx-0 ${getColumnClasses()} ${layout === 'list' ? 'bookmark-grid-list' : layout === 'compact' ? 'bookmark-grid-compact' : ''}`}>
+    <div className={`grid gap-4 px-0 mx-0 ${getColumnClasses()}`}>
       {allItems.map(({ item, type }, index) => (
         <div
           key={item.id}
@@ -312,6 +311,7 @@ const BookmarkGrid: React.FC<BookmarkGridProps> = ({
               onTagClick={onTagClick}
               onDelete={onDeleteBookmark}
               onUpdate={onUpdateBookmark}
+              layout={layout}
             />
           ) : (
             <FolderCard
