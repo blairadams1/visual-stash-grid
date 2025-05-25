@@ -1,9 +1,9 @@
+
 import { Bookmark } from "@/lib/bookmarkUtils";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { generatePlaceholderThumbnail } from "@/lib/bookmarkUtils";
-import { getIntelligentThumbnail, getThumbnailSettings } from "@/lib/intelligentThumbnail";
 import { Settings } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,6 @@ interface BookmarkCardProps {
 const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
   ({ bookmark, onTagClick, onDelete, onUpdate }, ref) => {
     const [imageError, setImageError] = useState(false);
-    const [intelligentThumbnail, setIntelligentThumbnail] = useState<string>(bookmark.thumbnail);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editedTitle, setEditedTitle] = useState(bookmark.title);
     const [editedUrl, setEditedUrl] = useState(bookmark.url);
@@ -47,22 +46,6 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
       const selectedTagsSet = new Set(editedTags.split(",").map(t => t.trim()).filter(t => t));
       return allTags.filter(tag => !selectedTagsSet.has(tag));
     }, [allTags, editedTags]);
-
-    // Load intelligent thumbnail on component mount
-    useEffect(() => {
-      const loadIntelligentThumbnail = async () => {
-        try {
-          const settings = getThumbnailSettings();
-          const result = await getIntelligentThumbnail(bookmark.url, bookmark.title, settings);
-          setIntelligentThumbnail(result.thumbnail);
-        } catch (error) {
-          console.error('Failed to load intelligent thumbnail:', error);
-          // Keep the original thumbnail as fallback
-        }
-      };
-
-      loadIntelligentThumbnail();
-    }, [bookmark.url, bookmark.title]);
 
     const handleImageError = () => {
       setImageError(true);
@@ -141,7 +124,7 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
         >
           <div className="absolute inset-0">
             <img
-              src={imageError ? generatePlaceholderThumbnail() : intelligentThumbnail}
+              src={imageError ? generatePlaceholderThumbnail() : bookmark.thumbnail}
               alt={bookmark.title}
               onError={handleImageError}
               className={`w-full h-full ${objectFitStyle}`}
