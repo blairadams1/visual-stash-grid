@@ -1,4 +1,3 @@
-
 export const createDefaultThumbnail = (title: string) => {
   const colors = [
     '#4285F4', // blue
@@ -23,13 +22,13 @@ export const createDefaultThumbnail = (title: string) => {
 const createScaledFavicon = (domain: string) => {
   const totalSize = 400;
   
-  // Card height is 208px (h-52), so favicon should be half of that = 104px
-  // Scale this to the 400px SVG container: (104/208) * 400 = 200px
-  const faviconSize = 200;
+  // Create a clean 64x64 favicon centered in the 400px container
+  // This gives us plenty of padding and keeps the favicon crisp
+  const faviconSize = 64;
   const faviconX = (totalSize - faviconSize) / 2;
   const faviconY = (totalSize - faviconSize) / 2;
   
-  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${totalSize}' height='${totalSize}' viewBox='0 0 ${totalSize} ${totalSize}'%3E%3Crect width='${totalSize}' height='${totalSize}' fill='%23f8fafc'/%3E%3Cimage x='${faviconX}' y='${faviconY}' width='${faviconSize}' height='${faviconSize}' href='https://www.google.com/s2/favicons?domain=${domain}%26sz=128' preserveAspectRatio='xMidYMid meet'/%3E%3C/svg%3E`;
+  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${totalSize}' height='${totalSize}' viewBox='0 0 ${totalSize} ${totalSize}'%3E%3Crect width='${totalSize}' height='${totalSize}' fill='%23f8fafc'/%3E%3Cimage x='${faviconX}' y='${faviconY}' width='${faviconSize}' height='${faviconSize}' href='https://www.google.com/s2/favicons?domain=${domain}%26sz=64' preserveAspectRatio='xMidYMid meet'/%3E%3C/svg%3E`;
 };
 
 export const generateThumbnail = (url: string, title: string) => {

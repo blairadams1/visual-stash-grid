@@ -1,4 +1,3 @@
-
 import { Bookmark } from "@/lib/bookmarkUtils";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -32,7 +31,6 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
     const [editedNotes, setEditedNotes] = useState(bookmark.notes || "");
     const [allBookmarks] = useLocalStorage<Bookmark[]>("bookmarks", []);
     const { toast } = useToast();
-    const [cardSize] = useLocalStorage<'small' | 'medium' | 'large'>('cardSize', 'medium');
 
     // Get all unique tags from bookmarks for tag suggestions
     const allTags = React.useMemo(() => {
@@ -46,6 +44,10 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
       const selectedTagsSet = new Set(editedTags.split(",").map(t => t.trim()).filter(t => t));
       return allTags.filter(tag => !selectedTagsSet.has(tag));
     }, [allTags, editedTags]);
+
+    // Check if thumbnail is a favicon (SVG with Google favicon URL)
+    const isFavicon = bookmark.thumbnail.includes('data:image/svg+xml') && 
+                     bookmark.thumbnail.includes('google.com/s2/favicons');
 
     const handleImageError = () => {
       setImageError(true);
@@ -113,22 +115,34 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
       });
     };
 
-    // Object-fit property based on card size
-    const objectFitStyle = cardSize === 'small' ? 'object-top' : 'object-cover';
-
     return (
       <>
         <Card
           ref={ref}
-          className="group relative overflow-hidden rounded-lg shadow-md h-52 cursor-grab active:cursor-grabbing"
+          className="group relative overflow-hidden rounded-lg shadow-md aspect-[16/9] cursor-grab active:cursor-grabbing"
         >
           <div className="absolute inset-0">
-            <img
-              src={imageError ? generatePlaceholderThumbnail() : bookmark.thumbnail}
-              alt={bookmark.title}
-              onError={handleImageError}
-              className={`w-full h-full ${objectFitStyle}`}
-            />
+            {isFavicon ? (
+              // Special handling for favicon thumbnails
+              <div className="w-full h-full bg-gray-50 flex items-center justify-center p-8">
+                <div className="w-1/2 h-1/2 flex items-center justify-center">
+                  <img
+                    src={imageError ? generatePlaceholderThumbnail() : bookmark.thumbnail}
+                    alt={bookmark.title}
+                    onError={handleImageError}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+            ) : (
+              // Regular image handling
+              <img
+                src={imageError ? generatePlaceholderThumbnail() : bookmark.thumbnail}
+                alt={bookmark.title}
+                onError={handleImageError}
+                className="w-full h-full object-cover"
+              />
+            )}
             
             {/* Gradient overlay */}
             <div className="absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-t from-black/80 to-transparent">
