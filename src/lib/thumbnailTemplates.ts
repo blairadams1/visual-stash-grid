@@ -23,8 +23,9 @@ export const createDefaultThumbnail = (title: string) => {
 const createScaledFavicon = (domain: string) => {
   const totalSize = 400;
   
-  // Make favicon much smaller - only 80px (20% of total size) with lots of padding
-  const faviconSize = 80;
+  // Card height is 208px (h-52), so favicon should be half of that = 104px
+  // Scale this to the 400px SVG container: (104/208) * 400 = 200px
+  const faviconSize = 200;
   const faviconX = (totalSize - faviconSize) / 2;
   const faviconY = (totalSize - faviconSize) / 2;
   
