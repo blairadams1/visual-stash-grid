@@ -1,3 +1,4 @@
+
 export const createDefaultThumbnail = (title: string) => {
   const colors = [
     '#4285F4', // blue
@@ -20,17 +21,14 @@ export const createDefaultThumbnail = (title: string) => {
 };
 
 const createScaledFavicon = (domain: string) => {
-  // Much larger padding for smaller favicons - increased from 70px to 110px
-  const padding = 110;
   const totalSize = 400;
-  const maxIconSize = totalSize - (padding * 2);
   
-  // Make icons even smaller - reduce to 60% of available space instead of 80%
-  const iconSize = Math.min(maxIconSize * 0.6, 120);
-  const iconX = (totalSize - iconSize) / 2;
-  const iconY = (totalSize - iconSize) / 2;
+  // Make favicon much smaller - only 80px (20% of total size) with lots of padding
+  const faviconSize = 80;
+  const faviconX = (totalSize - faviconSize) / 2;
+  const faviconY = (totalSize - faviconSize) / 2;
   
-  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${totalSize}' height='${totalSize}' viewBox='0 0 ${totalSize} ${totalSize}'%3E%3Crect width='${totalSize}' height='${totalSize}' fill='%23f8fafc'/%3E%3Cimage x='${iconX}' y='${iconY}' width='${iconSize}' height='${iconSize}' href='https://www.google.com/s2/favicons?domain=${domain}%26sz=128' preserveAspectRatio='xMidYMid meet'/%3E%3C/svg%3E`;
+  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${totalSize}' height='${totalSize}' viewBox='0 0 ${totalSize} ${totalSize}'%3E%3Crect width='${totalSize}' height='${totalSize}' fill='%23f8fafc'/%3E%3Cimage x='${faviconX}' y='${faviconY}' width='${faviconSize}' height='${faviconSize}' href='https://www.google.com/s2/favicons?domain=${domain}%26sz=128' preserveAspectRatio='xMidYMid meet'/%3E%3C/svg%3E`;
 };
 
 export const generateThumbnail = (url: string, title: string) => {
