@@ -1,3 +1,4 @@
+
 import { Bookmark } from "@/lib/bookmarkUtils";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -123,14 +124,14 @@ const BookmarkCard = React.forwardRef<HTMLDivElement, BookmarkCardProps>(
         >
           <div className="absolute inset-0">
             {isFavicon ? (
-              // Special handling for favicon thumbnails
-              <div className="w-full h-full bg-gray-50 flex items-center justify-center p-8">
-                <div className="w-1/2 h-1/2 flex items-center justify-center">
+              // Special handling for favicon thumbnails with 20% padding
+              <div className="w-full h-full bg-gray-50 p-[20%] flex items-center justify-center">
+                <div className="w-full h-full flex items-center justify-center">
                   <img
                     src={imageError ? generatePlaceholderThumbnail() : bookmark.thumbnail}
                     alt={bookmark.title}
                     onError={handleImageError}
-                    className="w-full h-full object-contain"
+                    className="max-w-full max-h-full object-contain"
                   />
                 </div>
               </div>
